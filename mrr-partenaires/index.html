@@ -149,7 +149,8 @@ table.t th.cur, table.t td.cur { background: var(--teal-soft); }
 .mrr-in.pre { border-color: var(--warn); background: var(--warn-bg); }
 .rec-in { width: 140px; min-height: 32px !important; padding: 4px 6px !important; }
 .oip-in { width: 110px; min-height: 32px !important; padding: 4px 6px !important; }
-.oip-in:placeholder-shown { border-style: dashed; }
+.oip-in:placeholder-shown, .prod-in:placeholder-shown { border-style: dashed; }
+.prod-in { width: 130px; min-height: 32px !important; padding: 4px 6px !important; }
 table.grid td, table.grid th { padding: 5px 4px; }
 table.grid td.sticky, table.grid th.sticky { position: sticky; left: 0; background: var(--surface); z-index: 1; min-width: 170px; max-width: 240px; padding-left: 8px; box-shadow: 1px 0 0 var(--line); }
 table.grid td.sticky small { display: block; color: var(--muted); font-size: 11px; }
@@ -326,6 +327,7 @@ form.stack { display: grid; gap: 12px; }
   const targetFor = k => { const o = (S.settings.targets || {})[k]; return o === undefined || o === null ? target() : +o || 0; };
   const sumTargets = ks => ks.reduce((t, k) => t + targetFor(k), 0);
   const mrrOf = (p, k) => +((p.mrr || {})[k]) || 0;
+  const productList = () => `<datalist id="productList">${[...new Set(["DFP", ...S.partners.map(p => (p.product || "").trim()).filter(Boolean)])].sort((a, b) => a.localeCompare(b, "fr")).map(v => `<option value="${esc(v)}"></option>`).join("")}</datalist>`;
 
   function dataBounds() {
     let min = CUR;
@@ -590,7 +592,7 @@ form.stack { display: grid; gap: 12px; }
     const ps = S.partners
       .filter(p => ui.entryRep === "all" || p.repId === ui.entryRep)
       .filter(p => !p.recruited || yOf(p.recruited) <= y)
-      .filter(p => !q || p.name.toLowerCase().includes(q) || (p.oip || "").toLowerCase().includes(q))
+      .filter(p => !q || p.name.toLowerCase().includes(q) || (p.oip || "").toLowerCase().includes(q) || (p.product || "").toLowerCase().includes(q))
       .sort((a, b) => (a.recruited || "").localeCompare(b.recruited || "") || a.name.localeCompare(b.name, "fr"));
     const ro = !S.canWrite;
     const colTot = months.map(k => ps.reduce((t, p) => t + mrrOf(p, k), 0));
@@ -606,6 +608,8 @@ form.stack { display: grid; gap: 12px; }
           <label class="field" style="flex:1 1 160px"><span>Commercial</span><select id="np-rep" required ${ro ? "disabled" : ""}>${activeReps().map(r => `<option value="${r.id}" ${ui.entryRep === r.id ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select></label>
           <label class="field" style="flex:1 1 150px"><span>Mois de recrutement</span><input type="month" id="np-month" value="${CUR}" max="${CUR}" required ${ro ? "disabled" : ""}></label>
           <label class="field" style="flex:1 1 130px"><span>OIP (facultatif)</span><input type="text" id="np-oip" maxlength="60" placeholder="N° OIP" ${ro ? "disabled" : ""}></label>
+          <label class="field" style="flex:1 1 140px"><span>Type de produit DFP</span><input type="text" id="np-prod" list="productList" maxlength="60" placeholder="Ex. DFP" ${ro ? "disabled" : ""}></label>
+          ${productList()}
           <button class="btn primary" type="submit" ${ro ? "disabled" : ""}>Ajouter le partenaire</button>
         </form>
       </div>
@@ -617,17 +621,18 @@ form.stack { display: grid; gap: 12px; }
         <div class="filters" style="margin-bottom:14px">
           <label class="field"><span>Année</span><select id="entryYear">${years.map(yy => `<option value="${yy}" ${yy === y ? "selected" : ""}>${yy}</option>`).join("")}</select></label>
           <label class="field"><span>Commercial</span><select id="entryRep"><option value="all">Tous</option>${sortedReps().map(r => `<option value="${r.id}" ${ui.entryRep === r.id ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select></label>
-          <label class="field"><span>Rechercher</span><input type="text" id="entryQ" value="${esc(ui.entryQ)}" placeholder="Nom ou OIP"></label>
+          <label class="field"><span>Rechercher</span><input type="text" id="entryQ" value="${esc(ui.entryQ)}" placeholder="Nom, OIP ou produit"></label>
           <div class="field"><span>Total ${y}</span><b class="num" style="font-size:18px;line-height:36px">${fmt(yearTot)}</b></div>
           <div class="field"><span>Recrutés en ${y}</span><b class="num" style="font-size:18px;line-height:36px">${recruitedThisYear}</b></div>
         </div>
         ${ps.length ? `<div class="tbl-wrap grid-wrap" id="entryTable"><table class="t grid">
-          <thead><tr><th class="sticky">Partenaire</th><th>Recruté le</th><th>OIP</th>${months.map(k => `<th class="n ${k === CUR ? "cur" : ""}">${MONTHS[mOf(k) - 1]}</th>`).join("")}<th class="n">Total ${y}</th></tr></thead>
+          <thead><tr><th class="sticky">Partenaire</th><th>Recruté le</th><th>OIP</th><th>Type de produit DFP</th>${months.map(k => `<th class="n ${k === CUR ? "cur" : ""}">${MONTHS[mOf(k) - 1]}</th>`).join("")}<th class="n">Total ${y}</th></tr></thead>
           <tbody>${ps.map(p => {
             const tot = months.reduce((t, k) => t + mrrOf(p, k), 0);
             return `<tr><td class="sticky"><b>${esc(p.name)}</b><small>${esc(repName(p.repId))}</small></td>
               <td><input class="rec-in" type="month" data-pid="${p.id}" value="${p.recruited || ""}" max="${CUR}" aria-label="Mois de recrutement ${esc(p.name)}" ${ro ? "disabled" : ""}></td>
               <td><input class="oip-in" type="text" data-pid="${p.id}" value="${esc(p.oip || "")}" maxlength="60" placeholder="À saisir" aria-label="OIP ${esc(p.name)}" ${ro ? "disabled" : ""}></td>
+              <td><input class="prod-in" type="text" list="productList" data-pid="${p.id}" value="${esc(p.product || "")}" maxlength="60" placeholder="À saisir" aria-label="Type de produit DFP ${esc(p.name)}" ${ro ? "disabled" : ""}></td>
               ${months.map(k => {
                 const before = p.recruited && k < p.recruited;
                 const closed = (before && !mrrOf(p, k)) || k > CUR;
@@ -637,7 +642,7 @@ form.stack { display: grid; gap: 12px; }
               }).join("")}
               <td class="n"><b>${fmt(tot)}</b></td></tr>`;
           }).join("")}</tbody>
-          <tfoot><tr><td class="sticky">Total</td><td></td><td></td>${colTot.map((v, i) => `<td class="n ${months[i] === CUR ? "cur" : ""}">${months[i] > CUR ? "" : fmt(v)}</td>`).join("")}<td class="n">${fmt(yearTot)}</td></tr></tfoot>
+          <tfoot><tr><td class="sticky">Total</td><td></td><td></td><td></td>${colTot.map((v, i) => `<td class="n ${months[i] === CUR ? "cur" : ""}">${months[i] > CUR ? "" : fmt(v)}</td>`).join("")}<td class="n">${fmt(yearTot)}</td></tr></tfoot>
         </table></div>`
           : `<div class="empty"><strong>Aucun partenaire à afficher</strong><span>${S.partners.length ? "Changez l'année, le commercial ou la recherche." : "Ajoutez votre premier partenaire avec le formulaire ci-dessus."}</span></div>`}
       </div>
@@ -668,12 +673,12 @@ form.stack { display: grid; gap: 12px; }
           <label class="field"><span>Rechercher</span><input type="text" id="pq" value="${esc(ui.partnerQ)}" placeholder="Nom du partenaire"></label>
           <label class="field"><span>Commercial</span><select id="pRep"><option value="all">Tous</option>${sortedReps().map(r => `<option value="${r.id}" ${ui.partnerRep === r.id ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select></label>
         </div></div>
-      ${ps.length ? `<div class="tbl-wrap"><table class="t"><thead><tr><th>Partenaire</th><th>OIP</th><th>Commercial</th><th>Recruté</th><th class="n">Mois saisis</th><th class="n">MRR cumulé</th><th class="n">Dernier mois</th><th></th></tr></thead><tbody>
+      ${ps.length ? `<div class="tbl-wrap"><table class="t"><thead><tr><th>Partenaire</th><th>OIP</th><th>Type de produit DFP</th><th>Commercial</th><th>Recruté</th><th class="n">Mois saisis</th><th class="n">MRR cumulé</th><th class="n">Dernier mois</th><th></th></tr></thead><tbody>
         ${ps.map(p => {
           const ks = Object.keys(p.mrr || {}).filter(k => mrrOf(p, k) > 0).sort();
           const last = ks[ks.length - 1];
           const cum = ks.reduce((s, k) => s + mrrOf(p, k), 0);
-          return `<tr><td><b>${esc(p.name)}</b></td><td class="${p.oip ? "" : "muted"}">${p.oip ? esc(p.oip) : "—"}</td><td>${esc(repName(p.repId))}</td><td class="num">${p.recruited ? mLong(p.recruited) : "—"}</td><td class="n">${ks.length}</td><td class="n"><b>${fmt(cum)}</b></td><td class="n muted">${last ? mLabel(last) + " · " + fmt(mrrOf(p, last)) : "—"}</td>
+          return `<tr><td><b>${esc(p.name)}</b></td><td class="${p.oip ? "" : "muted"}">${p.oip ? esc(p.oip) : "—"}</td><td class="${p.product ? "" : "muted"}">${p.product ? esc(p.product) : "—"}</td><td>${esc(repName(p.repId))}</td><td class="num">${p.recruited ? mLong(p.recruited) : "—"}</td><td class="n">${ks.length}</td><td class="n"><b>${fmt(cum)}</b></td><td class="n muted">${last ? mLabel(last) + " · " + fmt(mrrOf(p, last)) : "—"}</td>
             <td class="n">${ro ? "" : `<button class="btn ghost" data-edit="${p.id}">Modifier</button>`}</td></tr>`;
         }).join("")}</tbody></table></div>`
         : `<div class="empty"><strong>Aucun partenaire trouvé</strong><span>${S.partners.length ? "Modifiez la recherche ou le filtre." : "Ajoutez votre premier partenaire depuis l'onglet « Saisie MRR »."}</span>${!S.partners.length && !ro ? `<button class="btn primary" data-goto="entry">Ajouter un partenaire</button>` : ""}</div>`}
@@ -735,6 +740,8 @@ form.stack { display: grid; gap: 12px; }
         <label class="field"><span>Commercial</span><select id="ed-rep">${sortedReps().map(r => `<option value="${r.id}" ${r.id === p.repId ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select></label>
         <label class="field"><span>Mois de recrutement</span><input type="month" id="ed-month" value="${p.recruited || ""}" max="${CUR}" required></label>
         <label class="field"><span>OIP</span><input type="text" id="ed-oip" value="${esc(p.oip || "")}" maxlength="60"></label>
+        <label class="field"><span>Type de produit DFP</span><input type="text" id="ed-prod" list="productList" value="${esc(p.product || "")}" maxlength="60"></label>
+        ${productList()}
         <div class="acts"><button type="button" class="btn danger" id="ed-del">Supprimer</button>
           <span style="display:flex;gap:8px"><button type="button" class="btn" id="ed-cancel">Annuler</button><button type="submit" class="btn primary">Enregistrer</button></span></div>
       </form></div></div>`;
@@ -750,7 +757,7 @@ form.stack { display: grid; gap: 12px; }
     };
     $("#editForm").onsubmit = async e => {
       e.preventDefault();
-      const np = { ...p, mrr: { ...(p.mrr || {}) }, name: $("#ed-name").value.trim(), repId: $("#ed-rep").value, recruited: $("#ed-month").value, oip: $("#ed-oip").value.trim(), updatedAt: Date.now() };
+      const np = { ...p, mrr: { ...(p.mrr || {}) }, name: $("#ed-name").value.trim(), repId: $("#ed-rep").value, recruited: $("#ed-month").value, oip: $("#ed-oip").value.trim(), product: $("#ed-prod").value.trim(), updatedAt: Date.now() };
       if (!np.name) return;
       close(); await guarded(() => api.savePartner(np), "Partenaire mis à jour");
     };
@@ -766,8 +773,8 @@ form.stack { display: grid; gap: 12px; }
 
   // ---------- CSV ----------
   function csv() {
-    const rows = [["Partenaire", "OIP", "Commercial", "Mois de recrutement", "Mois", "MRR (EUR)"]];
-    for (const p of S.partners) for (const k of Object.keys(p.mrr || {}).sort()) if (mrrOf(p, k)) rows.push([p.name, p.oip || "", repName(p.repId), p.recruited || "", k, mrrOf(p, k)]);
+    const rows = [["Partenaire", "OIP", "Type de produit DFP", "Commercial", "Mois de recrutement", "Mois", "MRR (EUR)"]];
+    for (const p of S.partners) for (const k of Object.keys(p.mrr || {}).sort()) if (mrrOf(p, k)) rows.push([p.name, p.oip || "", p.product || "", repName(p.repId), p.recruited || "", k, mrrOf(p, k)]);
     return "﻿" + rows.map(r => r.map(c => /[";\n]/.test(String(c)) ? `"${String(c).replace(/"/g, '""')}"` : c).join(";")).join("\n");
   }
   async function exportCsv() {
@@ -842,6 +849,12 @@ form.stack { display: grid; gap: 12px; }
       if (v === null) delete mrr[mk]; else mrr[mk] = v;
       await guarded(() => api.savePartner({ ...p, mrr, updatedAt: Date.now() }), `${p.name} · ${mLong(mk)} : ${v === null ? "montant effacé" : fmt(v) + " enregistré"}`);
     }
+    if (t.classList.contains("prod-in")) {
+      const p = S.partners.find(x => x.id === t.dataset.pid);
+      const v = t.value.trim();
+      if (!p || v === (p.product || "")) return;
+      await guarded(() => api.savePartner({ ...p, product: v, updatedAt: Date.now() }), `${p.name} : produit ${v ? "enregistré" : "effacé"}`);
+    }
     if (t.classList.contains("rec-in") || t.classList.contains("oip-in")) {
       const p = S.partners.find(x => x.id === t.dataset.pid);
       if (!p) return;
@@ -899,11 +912,11 @@ form.stack { display: grid; gap: 12px; }
     const f = e.target;
     e.preventDefault();
     if (f.id === "newPartner") {
-      const name = $("#np-name").value.trim(), repId = $("#np-rep").value, rec = $("#np-month").value, oip = $("#np-oip").value.trim();
+      const name = $("#np-name").value.trim(), repId = $("#np-rep").value, rec = $("#np-month").value, oip = $("#np-oip").value.trim(), product = $("#np-prod").value.trim();
       if (!name || !repId || !rec) return;
       const mrr = {};
-      const ok = await guarded(() => api.savePartner({ id: uid("p"), name, repId, recruited: rec, oip, mrr, createdAt: Date.now(), updatedAt: Date.now() }), `${name} ajouté`);
-      if (ok) { ui.entryYear = yOf(rec); render(); const o = $("#np-oip"); if (o) o.value = ""; const n = $("#np-name"); if (n) { n.value = ""; n.focus(); } }
+      const ok = await guarded(() => api.savePartner({ id: uid("p"), name, repId, recruited: rec, oip, product, mrr, createdAt: Date.now(), updatedAt: Date.now() }), `${name} ajouté`);
+      if (ok) { ui.entryYear = yOf(rec); render(); const o = $("#np-oip"); if (o) o.value = ""; const pr = $("#np-prod"); if (pr) pr.value = ""; const n = $("#np-name"); if (n) { n.value = ""; n.focus(); } }
     }
     if (f.id === "newRep") {
       const name = $("#nr-name").value.trim();
