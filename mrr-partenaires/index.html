@@ -146,6 +146,10 @@ table.t th.cur, table.t td.cur { background: var(--teal-soft); }
 .mrr-in { width: 76px; min-height: 32px !important; padding: 5px 6px !important; text-align: right; font-variant-numeric: tabular-nums; }
 .mrr-in::-webkit-inner-spin-button, .mrr-in::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .mrr-in { -moz-appearance: textfield; }
+.mrr-in.pre { border-color: var(--warn); background: var(--warn-bg); }
+.rec-in { width: 140px; min-height: 32px !important; padding: 4px 6px !important; }
+.oip-in { width: 110px; min-height: 32px !important; padding: 4px 6px !important; }
+.oip-in:placeholder-shown { border-style: dashed; }
 table.grid td, table.grid th { padding: 5px 4px; }
 table.grid td.sticky, table.grid th.sticky { position: sticky; left: 0; background: var(--surface); z-index: 1; min-width: 170px; max-width: 240px; padding-left: 8px; box-shadow: 1px 0 0 var(--line); }
 table.grid td.sticky small { display: block; color: var(--muted); font-size: 11px; }
@@ -576,7 +580,7 @@ form.stack { display: grid; gap: 12px; }
     if (!S.reps.length) { el.innerHTML = emptyTeam(); return; }
     // keep what the person is typing across live refreshes
     const f = document.activeElement;
-    const keep = f && f.classList && f.classList.contains("mrr-in") ? { pid: f.dataset.pid, k: f.dataset.k, val: f.value, s: f.selectionStart } : null;
+    const keep = f && f.closest && f.closest("#entryTable") && f.dataset.pid ? { cls: f.classList[0], pid: f.dataset.pid, k: f.dataset.k || "", val: f.value, s: f.selectionStart } : null;
 
     const y = ui.entryYear;
     const months = range(ym(y, 1), ym(y, 12));
@@ -586,7 +590,7 @@ form.stack { display: grid; gap: 12px; }
     const ps = S.partners
       .filter(p => ui.entryRep === "all" || p.repId === ui.entryRep)
       .filter(p => !p.recruited || yOf(p.recruited) <= y)
-      .filter(p => !q || p.name.toLowerCase().includes(q))
+      .filter(p => !q || p.name.toLowerCase().includes(q) || (p.oip || "").toLowerCase().includes(q))
       .sort((a, b) => (a.recruited || "").localeCompare(b.recruited || "") || a.name.localeCompare(b.name, "fr"));
     const ro = !S.canWrite;
     const colTot = months.map(k => ps.reduce((t, p) => t + mrrOf(p, k), 0));
@@ -601,6 +605,7 @@ form.stack { display: grid; gap: 12px; }
           <label class="field" style="flex:2 1 220px"><span>Nom du partenaire</span><input type="text" id="np-name" required maxlength="120" placeholder="Ex. Telecom Services Lyon" ${ro ? "disabled" : ""}></label>
           <label class="field" style="flex:1 1 160px"><span>Commercial</span><select id="np-rep" required ${ro ? "disabled" : ""}>${activeReps().map(r => `<option value="${r.id}" ${ui.entryRep === r.id ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select></label>
           <label class="field" style="flex:1 1 150px"><span>Mois de recrutement</span><input type="month" id="np-month" value="${CUR}" max="${CUR}" required ${ro ? "disabled" : ""}></label>
+          <label class="field" style="flex:1 1 130px"><span>OIP (facultatif)</span><input type="text" id="np-oip" maxlength="60" placeholder="N° OIP" ${ro ? "disabled" : ""}></label>
           <button class="btn primary" type="submit" ${ro ? "disabled" : ""}>Ajouter le partenaire</button>
         </form>
       </div>
@@ -612,31 +617,33 @@ form.stack { display: grid; gap: 12px; }
         <div class="filters" style="margin-bottom:14px">
           <label class="field"><span>Année</span><select id="entryYear">${years.map(yy => `<option value="${yy}" ${yy === y ? "selected" : ""}>${yy}</option>`).join("")}</select></label>
           <label class="field"><span>Commercial</span><select id="entryRep"><option value="all">Tous</option>${sortedReps().map(r => `<option value="${r.id}" ${ui.entryRep === r.id ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select></label>
-          <label class="field"><span>Rechercher</span><input type="text" id="entryQ" value="${esc(ui.entryQ)}" placeholder="Nom du partenaire"></label>
+          <label class="field"><span>Rechercher</span><input type="text" id="entryQ" value="${esc(ui.entryQ)}" placeholder="Nom ou OIP"></label>
           <div class="field"><span>Total ${y}</span><b class="num" style="font-size:18px;line-height:36px">${fmt(yearTot)}</b></div>
           <div class="field"><span>Recrutés en ${y}</span><b class="num" style="font-size:18px;line-height:36px">${recruitedThisYear}</b></div>
         </div>
         ${ps.length ? `<div class="tbl-wrap grid-wrap" id="entryTable"><table class="t grid">
-          <thead><tr><th class="sticky">Partenaire</th><th>Recruté</th>${months.map(k => `<th class="n ${k === CUR ? "cur" : ""}">${MONTHS[mOf(k) - 1]}</th>`).join("")}<th class="n">Total ${y}</th></tr></thead>
+          <thead><tr><th class="sticky">Partenaire</th><th>Recruté le</th><th>OIP</th>${months.map(k => `<th class="n ${k === CUR ? "cur" : ""}">${MONTHS[mOf(k) - 1]}</th>`).join("")}<th class="n">Total ${y}</th></tr></thead>
           <tbody>${ps.map(p => {
             const tot = months.reduce((t, k) => t + mrrOf(p, k), 0);
             return `<tr><td class="sticky"><b>${esc(p.name)}</b><small>${esc(repName(p.repId))}</small></td>
-              <td class="muted num" style="white-space:nowrap">${p.recruited ? mLabel(p.recruited) : "—"}</td>
+              <td><input class="rec-in" type="month" data-pid="${p.id}" value="${p.recruited || ""}" max="${CUR}" aria-label="Mois de recrutement ${esc(p.name)}" ${ro ? "disabled" : ""}></td>
+              <td><input class="oip-in" type="text" data-pid="${p.id}" value="${esc(p.oip || "")}" maxlength="60" placeholder="À saisir" aria-label="OIP ${esc(p.name)}" ${ro ? "disabled" : ""}></td>
               ${months.map(k => {
-                const closed = (p.recruited && k < p.recruited) || k > CUR;
+                const before = p.recruited && k < p.recruited;
+                const closed = (before && !mrrOf(p, k)) || k > CUR;
                 if (closed) return `<td class="off ${k === CUR ? "cur" : ""}" aria-hidden="true"></td>`;
                 const v = (p.mrr || {})[k];
-                return `<td class="n ${k === CUR ? "cur" : ""}"><input class="mrr-in" type="number" min="0" step="1" inputmode="numeric" aria-label="MRR ${esc(p.name)} ${esc(mLong(k))}" data-pid="${p.id}" data-k="${k}" value="${v ?? ""}" ${ro ? "disabled" : ""}></td>`;
+                return `<td class="n ${k === CUR ? "cur" : ""}"><input class="mrr-in${before ? " pre" : ""}" ${before ? 'title="Montant saisi avant le mois de recrutement : vérifiez-le ou effacez-le"' : ""} type="number" min="0" step="1" inputmode="numeric" aria-label="MRR ${esc(p.name)} ${esc(mLong(k))}" data-pid="${p.id}" data-k="${k}" value="${v ?? ""}" ${ro ? "disabled" : ""}></td>`;
               }).join("")}
               <td class="n"><b>${fmt(tot)}</b></td></tr>`;
           }).join("")}</tbody>
-          <tfoot><tr><td class="sticky">Total</td><td></td>${colTot.map((v, i) => `<td class="n ${months[i] === CUR ? "cur" : ""}">${months[i] > CUR ? "" : fmt(v)}</td>`).join("")}<td class="n">${fmt(yearTot)}</td></tr></tfoot>
+          <tfoot><tr><td class="sticky">Total</td><td></td><td></td>${colTot.map((v, i) => `<td class="n ${months[i] === CUR ? "cur" : ""}">${months[i] > CUR ? "" : fmt(v)}</td>`).join("")}<td class="n">${fmt(yearTot)}</td></tr></tfoot>
         </table></div>`
           : `<div class="empty"><strong>Aucun partenaire à afficher</strong><span>${S.partners.length ? "Changez l'année, le commercial ou la recherche." : "Ajoutez votre premier partenaire avec le formulaire ci-dessus."}</span></div>`}
       </div>
     </div>`;
     if (keep) {
-      const inp = $(`.mrr-in[data-pid="${keep.pid}"][data-k="${keep.k}"]`);
+      const inp = $(`.${keep.cls}[data-pid="${keep.pid}"]${keep.k ? `[data-k="${keep.k}"]` : ""}`);
       if (inp) { inp.value = keep.val; inp.focus(); try { inp.setSelectionRange(keep.s, keep.s); } catch {} }
     } else if (ui.focusNext) {
       const inp = $(`.mrr-in[data-pid="${ui.focusNext.pid}"][data-k="${ui.focusNext.k}"]`);
@@ -661,12 +668,12 @@ form.stack { display: grid; gap: 12px; }
           <label class="field"><span>Rechercher</span><input type="text" id="pq" value="${esc(ui.partnerQ)}" placeholder="Nom du partenaire"></label>
           <label class="field"><span>Commercial</span><select id="pRep"><option value="all">Tous</option>${sortedReps().map(r => `<option value="${r.id}" ${ui.partnerRep === r.id ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select></label>
         </div></div>
-      ${ps.length ? `<div class="tbl-wrap"><table class="t"><thead><tr><th>Partenaire</th><th>Commercial</th><th>Recruté</th><th class="n">Mois saisis</th><th class="n">MRR cumulé</th><th class="n">Dernier mois</th><th></th></tr></thead><tbody>
+      ${ps.length ? `<div class="tbl-wrap"><table class="t"><thead><tr><th>Partenaire</th><th>OIP</th><th>Commercial</th><th>Recruté</th><th class="n">Mois saisis</th><th class="n">MRR cumulé</th><th class="n">Dernier mois</th><th></th></tr></thead><tbody>
         ${ps.map(p => {
           const ks = Object.keys(p.mrr || {}).filter(k => mrrOf(p, k) > 0).sort();
           const last = ks[ks.length - 1];
           const cum = ks.reduce((s, k) => s + mrrOf(p, k), 0);
-          return `<tr><td><b>${esc(p.name)}</b></td><td>${esc(repName(p.repId))}</td><td class="num">${p.recruited ? mLong(p.recruited) : "—"}</td><td class="n">${ks.length}</td><td class="n"><b>${fmt(cum)}</b></td><td class="n muted">${last ? mLabel(last) + " · " + fmt(mrrOf(p, last)) : "—"}</td>
+          return `<tr><td><b>${esc(p.name)}</b></td><td class="${p.oip ? "" : "muted"}">${p.oip ? esc(p.oip) : "—"}</td><td>${esc(repName(p.repId))}</td><td class="num">${p.recruited ? mLong(p.recruited) : "—"}</td><td class="n">${ks.length}</td><td class="n"><b>${fmt(cum)}</b></td><td class="n muted">${last ? mLabel(last) + " · " + fmt(mrrOf(p, last)) : "—"}</td>
             <td class="n">${ro ? "" : `<button class="btn ghost" data-edit="${p.id}">Modifier</button>`}</td></tr>`;
         }).join("")}</tbody></table></div>`
         : `<div class="empty"><strong>Aucun partenaire trouvé</strong><span>${S.partners.length ? "Modifiez la recherche ou le filtre." : "Ajoutez votre premier partenaire depuis l'onglet « Saisie MRR »."}</span>${!S.partners.length && !ro ? `<button class="btn primary" data-goto="entry">Ajouter un partenaire</button>` : ""}</div>`}
@@ -727,6 +734,7 @@ form.stack { display: grid; gap: 12px; }
         <label class="field"><span>Nom</span><input type="text" id="ed-name" value="${esc(p.name)}" maxlength="120" required></label>
         <label class="field"><span>Commercial</span><select id="ed-rep">${sortedReps().map(r => `<option value="${r.id}" ${r.id === p.repId ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select></label>
         <label class="field"><span>Mois de recrutement</span><input type="month" id="ed-month" value="${p.recruited || ""}" max="${CUR}" required></label>
+        <label class="field"><span>OIP</span><input type="text" id="ed-oip" value="${esc(p.oip || "")}" maxlength="60"></label>
         <div class="acts"><button type="button" class="btn danger" id="ed-del">Supprimer</button>
           <span style="display:flex;gap:8px"><button type="button" class="btn" id="ed-cancel">Annuler</button><button type="submit" class="btn primary">Enregistrer</button></span></div>
       </form></div></div>`;
@@ -742,7 +750,7 @@ form.stack { display: grid; gap: 12px; }
     };
     $("#editForm").onsubmit = async e => {
       e.preventDefault();
-      const np = { ...p, mrr: { ...(p.mrr || {}) }, name: $("#ed-name").value.trim(), repId: $("#ed-rep").value, recruited: $("#ed-month").value, updatedAt: Date.now() };
+      const np = { ...p, mrr: { ...(p.mrr || {}) }, name: $("#ed-name").value.trim(), repId: $("#ed-rep").value, recruited: $("#ed-month").value, oip: $("#ed-oip").value.trim(), updatedAt: Date.now() };
       if (!np.name) return;
       close(); await guarded(() => api.savePartner(np), "Partenaire mis à jour");
     };
@@ -758,8 +766,8 @@ form.stack { display: grid; gap: 12px; }
 
   // ---------- CSV ----------
   function csv() {
-    const rows = [["Partenaire", "Commercial", "Mois de recrutement", "Mois", "MRR (EUR)"]];
-    for (const p of S.partners) for (const k of Object.keys(p.mrr || {}).sort()) if (mrrOf(p, k)) rows.push([p.name, repName(p.repId), p.recruited || "", k, mrrOf(p, k)]);
+    const rows = [["Partenaire", "OIP", "Commercial", "Mois de recrutement", "Mois", "MRR (EUR)"]];
+    for (const p of S.partners) for (const k of Object.keys(p.mrr || {}).sort()) if (mrrOf(p, k)) rows.push([p.name, p.oip || "", repName(p.repId), p.recruited || "", k, mrrOf(p, k)]);
     return "﻿" + rows.map(r => r.map(c => /[";\n]/.test(String(c)) ? `"${String(c).replace(/"/g, '""')}"` : c).join(";")).join("\n");
   }
   async function exportCsv() {
@@ -834,6 +842,23 @@ form.stack { display: grid; gap: 12px; }
       if (v === null) delete mrr[mk]; else mrr[mk] = v;
       await guarded(() => api.savePartner({ ...p, mrr, updatedAt: Date.now() }), `${p.name} · ${mLong(mk)} : ${v === null ? "montant effacé" : fmt(v) + " enregistré"}`);
     }
+    if (t.classList.contains("rec-in") || t.classList.contains("oip-in")) {
+      const p = S.partners.find(x => x.id === t.dataset.pid);
+      if (!p) return;
+      if (t.classList.contains("rec-in")) {
+        const v = t.value;
+        if (!v || v > CUR) { t.value = p.recruited || ""; toast("Choisissez un mois de recrutement passé ou en cours."); return; }
+        if (v === p.recruited) return;
+        const early = Object.keys(p.mrr || {}).filter(k => k < v && mrrOf(p, k) > 0);
+        const ok = await guarded(() => api.savePartner({ ...p, recruited: v, updatedAt: Date.now() }), `${p.name} : recruté en ${mLong(v)}`);
+        if (ok && early.length) toast(`Attention : du MRR est saisi avant ${mLong(v)} (cases orange). Vérifiez-le ou effacez-le.`);
+        if (ok && yOf(v) > ui.entryYear) { ui.entryYear = yOf(v); render(); }
+      } else {
+        const v = t.value.trim();
+        if (v === (p.oip || "")) return;
+        await guarded(() => api.savePartner({ ...p, oip: v, updatedAt: Date.now() }), `${p.name} : OIP ${v ? "enregistré" : "effacé"}`);
+      }
+    }
     if (t.classList.contains("rep-name-in")) {
       const r = S.reps.find(x => x.id === t.dataset.rid);
       const name = t.value.trim();
@@ -874,11 +899,11 @@ form.stack { display: grid; gap: 12px; }
     const f = e.target;
     e.preventDefault();
     if (f.id === "newPartner") {
-      const name = $("#np-name").value.trim(), repId = $("#np-rep").value, rec = $("#np-month").value;
+      const name = $("#np-name").value.trim(), repId = $("#np-rep").value, rec = $("#np-month").value, oip = $("#np-oip").value.trim();
       if (!name || !repId || !rec) return;
       const mrr = {};
-      const ok = await guarded(() => api.savePartner({ id: uid("p"), name, repId, recruited: rec, mrr, createdAt: Date.now(), updatedAt: Date.now() }), `${name} ajouté`);
-      if (ok) { ui.entryYear = yOf(rec); render(); const n = $("#np-name"); if (n) { n.value = ""; n.focus(); } }
+      const ok = await guarded(() => api.savePartner({ id: uid("p"), name, repId, recruited: rec, oip, mrr, createdAt: Date.now(), updatedAt: Date.now() }), `${name} ajouté`);
+      if (ok) { ui.entryYear = yOf(rec); render(); const o = $("#np-oip"); if (o) o.value = ""; const n = $("#np-name"); if (n) { n.value = ""; n.focus(); } }
     }
     if (f.id === "newRep") {
       const name = $("#nr-name").value.trim();
