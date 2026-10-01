@@ -1,0 +1,10 @@
+# MRR Partenaires
+
+Tableau de bord RevOps pour suivre le MRR généré par les nouveaux partenaires recrutés par chaque commercial (objectif par défaut : 500 € / commercial / mois).
+
+- **Tableau de bord** : KPI, performance par commercial vs objectif à date, évolution mensuelle, détail mois par mois, classement, top partenaires. Filtres mois / trimestre / année / tout et par commercial. Export CSV.
+- **Saisie MRR** : ajout d'un partenaire (nom, commercial, mois de recrutement) et saisie du MRR mensuel de chaque partenaire.
+- **Partenaires** : liste, recherche, modification et suppression.
+- **Équipe & objectifs** : commerciaux (ajout, renommage, activation) et objectif mensuel.
+
+Publiée comme artifact claude.ai, la page stocke les données dans une base partagée. Ouverte en local (`index.html`), elle les garde dans le navigateur (localStorage) et propose un jeu d'exemple.

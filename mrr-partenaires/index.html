@@ -1,0 +1,848 @@
+<title>MRR Partenaires</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: dark brand header with tabs, then a single 1200px column; dashboard = filters row, KPI strip, two charts, detail tables. */
+:root {
+  --bg: #f4f7f8;
+  --surface: #ffffff;
+  --surface-2: #eef3f4;
+  --fg: #2a2536;
+  --fg-2: #5b5668;
+  --muted: #8a8696;
+  --line: #e1e6e9;
+  --teal: #00a5b5;
+  --teal-ink: #00798a;
+  --teal-soft: #d6f1f3;
+  --orange: #ff9015;
+  --orange-ink: #b45f00;
+  --plum: #7e0a5c;
+  --brand-dark: #39334a;
+  --on-dark: #ffffff;
+  --good: #1d8a5a;
+  --warn: #b86a00;
+  --bad: #b3261e;
+  --good-bg: #e2f4ea;
+  --warn-bg: #fdf0dc;
+  --bad-bg: #fbe6e4;
+  --shadow: 0 1px 2px rgba(42, 37, 54, .06), 0 6px 20px rgba(42, 37, 54, .06);
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #18151f; --surface: #221e2c; --surface-2: #2b2637; --fg: #eeecf3; --fg-2: #b9b5c4; --muted: #8d889b;
+    --line: #363042; --teal: #1cb9c8; --teal-ink: #5fd3de; --teal-soft: #173c43; --orange: #ffa040; --orange-ink: #ffb466;
+    --plum: #d05aa9; --brand-dark: #2b2538; --on-dark: #ffffff; --good: #4fc88d; --warn: #f0a845; --bad: #f07a70;
+    --good-bg: #183528; --warn-bg: #3a2a12; --bad-bg: #3d1d1b; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.25);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #18151f; --surface: #221e2c; --surface-2: #2b2637; --fg: #eeecf3; --fg-2: #b9b5c4; --muted: #8d889b;
+  --line: #363042; --teal: #1cb9c8; --teal-ink: #5fd3de; --teal-soft: #173c43; --orange: #ffa040; --orange-ink: #ffb466;
+  --plum: #d05aa9; --brand-dark: #2b2538; --on-dark: #ffffff; --good: #4fc88d; --warn: #f0a845; --bad: #f07a70;
+  --good-bg: #183528; --warn-bg: #3a2a12; --bad-bg: #3d1d1b; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.25);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 14px; line-height: 1.5; margin: 0; }
+table, input, select, button { font: inherit; color: inherit; }
+.num, td.n, th.n { font-variant-numeric: tabular-nums; }
+
+/* Header */
+.top { background: var(--brand-dark); color: var(--on-dark); }
+.top-in { max-width: 1200px; margin: 0 auto; padding: 18px 16px 0; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
+.brand { display: flex; align-items: center; gap: 12px; padding-bottom: 14px; }
+.mark { width: 34px; height: 34px; border-radius: 8px; background: var(--teal); position: relative; flex: none; }
+.mark::after { content: ""; position: absolute; right: -4px; bottom: -4px; width: 14px; height: 14px; border-radius: 50%; background: var(--orange); border: 3px solid var(--brand-dark); }
+.brand h1 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -.01em; line-height: 1.1; }
+.brand p { margin: 2px 0 0; font-size: 12px; opacity: .72; }
+.tabs { display: flex; gap: 4px; overflow-x: auto; }
+.tab { background: transparent; border: 0; color: var(--on-dark); opacity: .72; padding: 10px 14px 12px; cursor: pointer; font-weight: 600; border-bottom: 3px solid transparent; white-space: nowrap; }
+.tab:hover { opacity: 1; }
+.tab[aria-selected="true"] { opacity: 1; border-bottom-color: var(--orange); }
+.tab:focus-visible { outline: 2px solid var(--orange); outline-offset: -2px; }
+
+main { max-width: 1200px; margin: 0 auto; padding: 20px 16px 48px; display: grid; gap: 20px; }
+.banner { padding: 10px 14px; border-radius: var(--r); background: var(--warn-bg); color: var(--fg); font-size: 13px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+.banner.info { background: var(--teal-soft); }
+
+.card { background: var(--surface); border-radius: var(--r); box-shadow: var(--shadow); padding: 18px 20px; min-width: 0; }
+.card h2 { margin: 0 0 4px; font-size: 16px; font-weight: 700; text-wrap: balance; }
+.card .sub { margin: 0 0 14px; color: var(--fg-2); font-size: 13px; }
+.label { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+
+/* Controls */
+.filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field > span { font-size: 12px; font-weight: 600; color: var(--fg-2); }
+input[type="text"], input[type="number"], input[type="month"], select {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 5px; padding: 7px 10px; min-height: 36px; min-width: 0; max-width: 100%;
+}
+input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--teal); outline-offset: 1px; }
+.seg { display: inline-flex; background: var(--surface-2); border-radius: 6px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: transparent; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: 600; color: var(--fg-2); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 7px 14px; border-radius: 5px; cursor: pointer; font-weight: 600; min-height: 36px; }
+.btn:hover { border-color: var(--teal); }
+.btn.primary { background: var(--teal); border-color: var(--teal); color: #fff; }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.ghost { border-color: transparent; background: transparent; color: var(--teal-ink); padding-inline: 8px; }
+.btn.danger { color: var(--bad); }
+.btn.danger.armed { background: var(--bad); border-color: var(--bad); color: #fff; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* KPI strip */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.kpi { background: var(--surface); border-radius: var(--r); box-shadow: var(--shadow); padding: 14px 18px; display: grid; gap: 2px; align-content: start; }
+.kpi .v { font-size: 28px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.kpi .d { font-size: 12px; color: var(--fg-2); }
+.meter { height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; margin-top: 8px; }
+.meter i { display: block; height: 100%; background: var(--teal); border-radius: 3px; }
+
+.chip { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.chip.good { background: var(--good-bg); color: var(--good); }
+.chip.warn { background: var(--warn-bg); color: var(--warn); }
+.chip.bad { background: var(--bad-bg); color: var(--bad); }
+
+.grid2 { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 20px; }
+@media (max-width: 900px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+
+/* Rep bars */
+.reps { display: grid; gap: 4px; }
+.rep-row { display: grid; grid-template-columns: minmax(90px, 180px) minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 6px 4px; border-radius: 4px; }
+.rep-row:hover { background: var(--surface-2); }
+.rep-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rep-name small { display: block; font-weight: 400; color: var(--muted); font-size: 11px; }
+.track { position: relative; height: 18px; background: var(--surface-2); border-radius: 0 4px 4px 0; }
+.track .bar { position: absolute; left: 0; top: 0; bottom: 0; background: var(--teal); border-radius: 0 4px 4px 0; min-width: 2px; }
+.track .tgt { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--orange); }
+.rep-val { text-align: right; display: grid; justify-items: end; gap: 2px; min-width: 92px; }
+.rep-val b { font-variant-numeric: tabular-nums; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--fg-2); margin-top: 10px; }
+.legend i { display: inline-block; width: 12px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.legend i.line { width: 14px; height: 0; border-top: 2px dashed var(--orange); border-radius: 0; vertical-align: 3px; }
+.legend i.tick { width: 2px; height: 12px; background: var(--orange); border-radius: 0; }
+
+/* SVG chart */
+.chart-wrap { position: relative; }
+.chart-wrap svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart-wrap text { fill: var(--muted); font-size: 11px; font-family: var(--font); }
+.tip { position: fixed; z-index: 50; pointer-events: none; background: var(--brand-dark); color: var(--on-dark); padding: 8px 10px; border-radius: 5px; font-size: 12px; line-height: 1.45; box-shadow: var(--shadow); max-width: 240px; }
+.tip b { font-weight: 700; }
+
+/* Tables */
+.tbl-wrap { overflow-x: auto; margin-inline: -4px; }
+table.t { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.t th { text-align: left; font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); padding: 8px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.t td { padding: 8px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+table.t td.n, table.t th.n { text-align: right; white-space: nowrap; }
+table.t tfoot td { font-weight: 700; border-bottom: 0; border-top: 2px solid var(--line); }
+table.t tr.hl td { background: var(--teal-soft); }
+table.t td.zero { color: var(--muted); }
+table.t th.cur, table.t td.cur { background: var(--teal-soft); }
+.mrr-in { width: 110px; text-align: right; font-variant-numeric: tabular-nums; }
+.saved { color: var(--good); font-size: 12px; font-weight: 600; }
+
+.entry-layout { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 900px) { .entry-layout { grid-template-columns: minmax(0, 1fr); } }
+form.stack { display: grid; gap: 12px; }
+.empty { padding: 28px 16px; text-align: center; color: var(--fg-2); display: grid; gap: 10px; justify-items: center; }
+.empty strong { color: var(--fg); font-size: 15px; }
+.row-actions { display: flex; gap: 2px; justify-content: flex-end; }
+.muted { color: var(--muted); }
+.toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: space-between; margin-bottom: 12px; }
+
+.overlay { position: fixed; inset: 0; background: rgba(20, 16, 28, .5); display: grid; place-items: center; padding: 16px; z-index: 40; }
+.modal { background: var(--surface); border-radius: 8px; padding: 20px; width: min(420px, 100%); box-shadow: var(--shadow); }
+.modal h3 { margin: 0 0 14px; font-size: 16px; }
+.modal .acts { display: flex; justify-content: space-between; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
+.toast { position: fixed; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: var(--brand-dark); color: var(--on-dark); padding: 9px 16px; border-radius: 6px; font-weight: 600; font-size: 13px; z-index: 60; box-shadow: var(--shadow); }
+@media (prefers-reduced-motion: no-preference) { .track .bar, .meter i { transition: width .35s ease; } }
+@media (max-width: 520px) {
+  .rep-row { grid-template-columns: minmax(70px, 100px) minmax(0, 1fr) auto; gap: 8px; }
+  .kpi .v { font-size: 24px; }
+}
+</style>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <div class="mark" aria-hidden="true"></div>
+      <div>
+        <h1>MRR Partenaires</h1>
+        <p>Recrutement partenaires · objectif <span id="hdrTarget">500 €</span> de MRR / commercial / mois</p>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" role="tab" id="tab-dash" data-tab="dash" aria-selected="true">Tableau de bord</button>
+      <button class="tab" role="tab" id="tab-entry" data-tab="entry" aria-selected="false">Saisie MRR</button>
+      <button class="tab" role="tab" id="tab-partners" data-tab="partners" aria-selected="false">Partenaires</button>
+      <button class="tab" role="tab" id="tab-team" data-tab="team" aria-selected="false">Équipe &amp; objectifs</button>
+    </nav>
+  </div>
+</header>
+
+<main id="app">
+  <div id="banner"></div>
+  <section id="view-dash"></section>
+  <section id="view-entry" hidden></section>
+  <section id="view-partners" hidden></section>
+  <section id="view-team" hidden></section>
+</main>
+<div class="tip" id="tip" hidden></div>
+<div id="modalRoot"></div>
+
+<script>
+(() => {
+  "use strict";
+  // ---------- helpers ----------
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const eur = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+  const fmt = v => eur.format(Math.round(v || 0));
+  const fmtK = v => v >= 10000 ? (Math.round(v / 100) / 10).toString().replace(".", ",") + " k€" : fmt(v);
+  const pct = v => isFinite(v) ? Math.round(v * 100) + " %" : "—";
+  const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+  const MONTHS_L = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+  const now = new Date();
+  const CUR = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const ym = (y, m) => `${y}-${String(m).padStart(2, "0")}`;
+  const yOf = k => +k.slice(0, 4);
+  const mOf = k => +k.slice(5, 7);
+  const mLabel = k => `${MONTHS[mOf(k) - 1]} ${String(yOf(k)).slice(2)}`;
+  const mLong = k => `${MONTHS_L[mOf(k) - 1]} ${yOf(k)}`;
+  const addM = (k, n) => { const d = new Date(yOf(k), mOf(k) - 1 + n, 1); return ym(d.getFullYear(), d.getMonth() + 1); };
+  const range = (a, b) => { const out = []; for (let k = a; k <= b; k = addM(k, 1)) out.push(k); return out; };
+  const qOf = k => Math.ceil(mOf(k) / 3);
+  const status = r => !isFinite(r) ? null : r >= 1 ? ["good", "✓", "Objectif atteint"] : r >= 0.7 ? ["warn", "●", "Proche"] : ["bad", "▼", "En retard"];
+  const chip = r => { const s = status(r); return s ? `<span class="chip ${s[0]}" title="${s[2]}"><span aria-hidden="true">${s[1]}</span>${pct(r)}</span>` : `<span class="muted">—</span>`; };
+  const safeLS = {
+    get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+  };
+
+  // ---------- state ----------
+  const S = { reps: [], partners: [], settings: { monthlyTarget: 500 }, mode: "loading", canWrite: true, loaded: false };
+  const prefs = safeLS.get("mrr-ui") || {};
+  const ui = {
+    tab: ["dash", "entry", "partners", "team"].includes(location.hash.slice(1)) ? location.hash.slice(1) : (prefs.tab || "dash"),
+    gran: prefs.gran || "quarter",
+    period: null,
+    dashRep: "all",
+    entryMonth: CUR,
+    entryRep: prefs.entryRep || "all",
+    partnerRep: "all",
+    partnerQ: ""
+  };
+  const savePrefs = () => safeLS.set("mrr-ui", { tab: ui.tab, gran: ui.gran, entryRep: ui.entryRep });
+
+  // ---------- backend (shared db, or this browser as fallback) ----------
+  let db = null, downloads = null;
+  const LOCAL_KEY = "mrr-partenaires-data";
+  const local = {
+    load() { const d = safeLS.get(LOCAL_KEY); if (d) { S.reps = d.reps || []; S.partners = d.partners || []; S.settings = d.settings || S.settings; } },
+    persist() { safeLS.set(LOCAL_KEY, { reps: S.reps, partners: S.partners, settings: S.settings }); }
+  };
+  const strip = o => { const { id, ...rest } = o; return JSON.parse(JSON.stringify(rest)); };
+  function upsertLocal(list, item) { const i = list.findIndex(x => x.id === item.id); if (i >= 0) list[i] = item; else list.push(item); }
+
+  const api = {
+    async saveRep(r) {
+      if (db) return db.collection("reps").doc(r.id).set(strip(r));
+      upsertLocal(S.reps, r); local.persist(); render();
+    },
+    async deleteRep(id) {
+      if (db) return db.collection("reps").doc(id).delete();
+      S.reps = S.reps.filter(r => r.id !== id); local.persist(); render();
+    },
+    async savePartner(p) {
+      if (db) return db.collection("partners").doc(p.id).set(strip(p));
+      upsertLocal(S.partners, p); local.persist(); render();
+    },
+    async deletePartner(id) {
+      if (db) return db.collection("partners").doc(id).delete();
+      S.partners = S.partners.filter(p => p.id !== id); local.persist(); render();
+    },
+    async saveSettings(s) {
+      if (db) return db.doc("settings/main").set(s);
+      S.settings = s; local.persist(); render();
+    }
+  };
+  async function guarded(fn, okMsg) {
+    try { await fn(); if (okMsg) toast(okMsg); return true; }
+    catch (e) {
+      const c = e && e.code;
+      if (c === "invalid_argument" && db) { S.canWrite = false; render(); toast("Vous avez un accès en lecture seule : modification non enregistrée."); }
+      else if (c === "quota_exceeded") toast("Espace de stockage plein : supprimez d'anciens partenaires puis réessayez.");
+      else toast("Enregistrement impossible pour le moment. Réessayez dans quelques secondes.");
+      return false;
+    }
+  }
+
+  async function boot() {
+    const c = window.claude;
+    if (!c || typeof c.use !== "function") { startLocal(); return; }
+    let user = null;
+    try {
+      [db, user, downloads] = await Promise.all([c.use("db"), c.use("user").catch(() => null), c.use("downloads").catch(() => null)]);
+    } catch { db = null; }
+    if (!db) { startLocal(); return; }
+    S.mode = "db";
+    if (user) { try { const w = await user.can("data.write"); if (w === false) S.canWrite = false; } catch {} }
+    const ready = { reps: false, partners: false, settings: false };
+    const done = k => { ready[k] = true; if (ready.reps && ready.partners && ready.settings) S.loaded = true; render(); };
+    const onErr = () => { S.mode = "error"; render(); };
+    db.collection("reps").onSnapshot(s => { S.reps = s.docs.map(d => ({ id: d.id, ...d.data() })); done("reps"); }, onErr);
+    db.collection("partners").onSnapshot(s => { S.partners = s.docs.map(d => ({ id: d.id, ...d.data() })); done("partners"); }, onErr);
+    db.doc("settings/main").onSnapshot(s => { S.settings = s.exists ? { monthlyTarget: 500, ...s.data() } : { monthlyTarget: 500 }; done("settings"); }, onErr);
+  }
+  function startLocal() { S.mode = "local"; local.load(); S.loaded = true; render(); }
+
+  // ---------- derived data ----------
+  const repName = id => (S.reps.find(r => r.id === id) || {}).name || "Non attribué";
+  const sortedReps = () => [...S.reps].sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name, "fr"));
+  const activeReps = () => sortedReps().filter(r => r.active !== false);
+  const target = () => +S.settings.monthlyTarget || 0;
+  const mrrOf = (p, k) => +((p.mrr || {})[k]) || 0;
+
+  function dataBounds() {
+    let min = CUR;
+    for (const p of S.partners) {
+      if (p.recruited && p.recruited < min) min = p.recruited;
+      for (const k of Object.keys(p.mrr || {})) if (k < min) min = k;
+    }
+    return { min, max: CUR };
+  }
+  function periodOptions(gran) {
+    const { min } = dataBounds();
+    const y0 = Math.min(yOf(min), now.getFullYear() - 1), y1 = now.getFullYear();
+    const opts = [];
+    if (gran === "month") for (let k = CUR; k >= ym(y0, 1); k = addM(k, -1)) opts.push([k, mLong(k)]);
+    if (gran === "quarter") for (let y = y1; y >= y0; y--) for (let q = 4; q >= 1; q--) { if (y === y1 && q > qOf(CUR)) continue; opts.push([`${y}-Q${q}`, `T${q} ${y}`]); }
+    if (gran === "year") for (let y = y1; y >= y0; y--) opts.push([String(y), String(y)]);
+    if (gran === "all") opts.push(["all", "Depuis le début"]);
+    return opts;
+  }
+  function defaultPeriod(gran) {
+    return gran === "month" ? CUR : gran === "quarter" ? `${now.getFullYear()}-Q${qOf(CUR)}` : gran === "year" ? String(now.getFullYear()) : "all";
+  }
+  function monthsOf(gran, period) {
+    if (gran === "month") return [period];
+    if (gran === "quarter") { const [y, q] = period.split("-Q").map(Number); return range(ym(y, q * 3 - 2), ym(y, q * 3)); }
+    if (gran === "year") return range(ym(+period, 1), ym(+period, 12));
+    return range(dataBounds().min, CUR);
+  }
+  function periodLabel(gran, period) {
+    return gran === "month" ? mLong(period) : gran === "quarter" ? period.replace(/(\d{4})-Q(\d)/, "T$2 $1") : gran === "year" ? period : "depuis le début";
+  }
+  // Reps shown in the dashboard: active ones, plus inactive ones that produced MRR in the window
+  function scopeReps(months) {
+    const set = new Set(months);
+    const withMrr = new Set(S.partners.filter(p => months.some(k => mrrOf(p, k) > 0)).map(p => p.repId));
+    let reps = sortedReps().filter(r => r.active !== false || withMrr.has(r.id));
+    if (ui.dashRep !== "all") reps = reps.filter(r => r.id === ui.dashRep);
+    return reps;
+  }
+  function repStats(rep, months) {
+    const elapsed = months.filter(k => k <= CUR);
+    const ps = S.partners.filter(p => p.repId === rep.id);
+    const mrr = ps.reduce((s, p) => s + months.reduce((t, k) => t + mrrOf(p, k), 0), 0);
+    const recruited = ps.filter(p => p.recruited && months.includes(p.recruited)).length;
+    const tgt = rep.active === false ? 0 : target() * elapsed.length;
+    return { rep, mrr, recruited, tgt, ratio: tgt ? mrr / tgt : NaN, partners: ps.filter(p => months.some(k => mrrOf(p, k) > 0)).length };
+  }
+
+  // ---------- render ----------
+  function render() {
+    $("#hdrTarget").textContent = fmt(target());
+    $$(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.tab === ui.tab)));
+    ["dash", "entry", "partners", "team"].forEach(v => { $("#view-" + v).hidden = v !== ui.tab; });
+    renderBanner();
+    if (ui.tab === "dash") renderDash();
+    if (ui.tab === "entry") renderEntry();
+    if (ui.tab === "partners") renderPartners();
+    if (ui.tab === "team") renderTeam();
+  }
+
+  function renderBanner() {
+    let h = "";
+    if (S.mode === "loading") h = `<div class="banner info">Chargement des données…</div>`;
+    else if (S.mode === "local") h = `<div class="banner"><span>Les données sont enregistrées dans <b>ce navigateur uniquement</b>. Ouvrez la page depuis son lien claude.ai pour les partager avec l'équipe.</span>${!S.partners.length && !S.reps.length ? `<button class="btn" data-act="demo">Charger un exemple</button>` : ""}</div>`;
+    else if (S.mode === "error") h = `<div class="banner">La connexion aux données a été interrompue. Rechargez la page pour la rétablir.</div>`;
+    else if (!S.canWrite) h = `<div class="banner info">Vous consultez ce tableau de bord en lecture seule.</div>`;
+    $("#banner").innerHTML = h;
+  }
+
+  function emptyTeam() {
+    return `<div class="card"><div class="empty"><strong>Commencez par ajouter vos commerciaux</strong>
+      <span>Ajoutez les 9 commerciaux de l'équipe dans « Équipe &amp; objectifs », puis enregistrez les partenaires qu'ils recrutent et leur MRR mensuel.</span>
+      ${S.canWrite ? `<button class="btn primary" data-goto="team">Ajouter les commerciaux</button>` : ""}</div></div>`;
+  }
+
+  // ----- Dashboard -----
+  function renderDash() {
+    const el = $("#view-dash");
+    if (!S.loaded) { el.innerHTML = ""; return; }
+    if (!S.reps.length) { el.innerHTML = emptyTeam(); return; }
+    const opts = periodOptions(ui.gran);
+    if (!ui.period || !opts.some(o => o[0] === ui.period)) ui.period = opts.some(o => o[0] === defaultPeriod(ui.gran)) ? defaultPeriod(ui.gran) : opts[0][0];
+    const months = monthsOf(ui.gran, ui.period);
+    const elapsed = months.filter(k => k <= CUR);
+    const reps = scopeReps(months);
+    const stats = reps.map(r => repStats(r, months));
+    const repIds = new Set(reps.map(r => r.id));
+    const total = stats.reduce((s, x) => s + x.mrr, 0);
+    const tgt = stats.reduce((s, x) => s + x.tgt, 0);
+    const fullTgt = reps.filter(r => r.active !== false).length * target() * months.length;
+    const recruited = stats.reduce((s, x) => s + x.recruited, 0);
+    const activeP = S.partners.filter(p => repIds.has(p.repId) && months.some(k => mrrOf(p, k) > 0)).length;
+    const ratio = tgt ? total / tgt : NaN;
+    const perRepMonth = reps.length && elapsed.length ? total / (stats.filter(s => s.tgt).length || 1) / elapsed.length : 0;
+    const remaining = Math.max(0, fullTgt - total);
+    const pLabel = periodLabel(ui.gran, ui.period);
+
+    el.innerHTML = `
+      <div style="display:grid;gap:20px">
+      <div class="filters">
+        <div class="field"><span>Période</span>
+          <div class="seg" role="group" aria-label="Granularité">
+            ${[["month", "Mois"], ["quarter", "Trimestre"], ["year", "Année"], ["all", "Tout"]].map(([g, l]) => `<button data-gran="${g}" aria-pressed="${ui.gran === g}">${l}</button>`).join("")}
+          </div>
+        </div>
+        ${ui.gran !== "all" ? `<label class="field"><span>${ui.gran === "month" ? "Mois" : ui.gran === "quarter" ? "Trimestre" : "Année"}</span>
+          <select id="periodSel">${opts.map(([v, l]) => `<option value="${v}" ${v === ui.period ? "selected" : ""}>${l}</option>`).join("")}</select></label>` : ""}
+        <label class="field"><span>Commercial</span>
+          <select id="dashRep"><option value="all">Toute l'équipe</option>${sortedReps().map(r => `<option value="${r.id}" ${ui.dashRep === r.id ? "selected" : ""}>${esc(r.name)}${r.active === false ? " (inactif)" : ""}</option>`).join("")}</select></label>
+        <div style="flex:1"></div>
+        <button class="btn" data-act="export">Exporter en CSV</button>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi"><span class="label">MRR nouveaux partenaires</span><span class="v">${fmt(total)}</span>
+          <span class="d">${esc(pLabel)}${ui.dashRep !== "all" ? " · " + esc(repName(ui.dashRep)) : ""}</span></div>
+        <div class="kpi"><span class="label">Atteinte objectif à date</span><span class="v">${isFinite(ratio) ? pct(ratio) : "—"}</span>
+          <span class="d">Objectif à date ${fmt(tgt)} ${chip(ratio)}</span>
+          <div class="meter" aria-hidden="true"><i style="width:${Math.min(100, (ratio || 0) * 100)}%"></i></div></div>
+        <div class="kpi"><span class="label">Reste à faire</span><span class="v">${fmt(remaining)}</span>
+          <span class="d">sur un objectif de période de ${fmt(fullTgt)}</span></div>
+        <div class="kpi"><span class="label">Partenaires</span><span class="v">${recruited} <span style="font-size:15px;font-weight:600;color:var(--fg-2)">recrutés</span></span>
+          <span class="d">${activeP} partenaire${activeP > 1 ? "s" : ""} ont généré du MRR · ${fmt(perRepMonth)} / commercial / mois</span></div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h2>Performance par commercial</h2>
+          <p class="sub">MRR ${esc(pLabel)} face à l'objectif à date (${fmt(target())} × ${elapsed.length} mois écoulé${elapsed.length > 1 ? "s" : ""})</p>
+          ${repBars(stats)}
+          <div class="legend"><span><i style="background:var(--teal)"></i>MRR réalisé</span><span><i class="tick"></i>Objectif à date</span></div>
+        </div>
+        <div class="card">
+          <h2>Évolution mensuelle</h2>
+          <p class="sub">${ui.gran === "all" ? "Tous les mois" : "Année " + yOf(months[0])} · MRR de ${ui.dashRep === "all" ? "l'équipe" : esc(repName(ui.dashRep))}, période sélectionnée en couleur</p>
+          <div class="chart-wrap" id="monthChart"></div>
+          <div class="legend"><span><i style="background:var(--teal)"></i>MRR du mois</span><span><i class="line"></i>Objectif mensuel (${fmt(target() * reps.filter(r => r.active !== false).length)})</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Détail mois par mois</h2>
+        <p class="sub">MRR généré par les nouveaux partenaires de chaque commercial${ui.gran === "all" ? "" : ", année " + yOf(months[0])}</p>
+        <div class="tbl-wrap">${matrix(reps, months)}</div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h2>Classement</h2>
+          <p class="sub">${esc(pLabel)}</p>
+          <div class="tbl-wrap"><table class="t">
+            <thead><tr><th>#</th><th>Commercial</th><th class="n">Recrutés</th><th class="n">MRR</th><th class="n">Objectif</th><th class="n">Atteinte</th></tr></thead>
+            <tbody>${[...stats].sort((a, b) => b.mrr - a.mrr).map((s, i) => `<tr><td class="num muted">${i + 1}</td><td style="white-space:nowrap">${esc(s.rep.name)}</td><td class="n">${s.recruited}</td><td class="n"><b>${fmt(s.mrr)}</b></td><td class="n">${s.tgt ? fmt(s.tgt) : "—"}</td><td class="n">${chip(s.ratio)}</td></tr>`).join("")}</tbody>
+          </table></div>
+        </div>
+        <div class="card">
+          <h2>Top partenaires</h2>
+          <p class="sub">Plus gros contributeurs au MRR, ${esc(pLabel)}</p>
+          ${topPartners(months, repIds)}
+        </div>
+      </div>
+      </div>`;
+    monthChart(reps, months);
+  }
+
+  function repBars(stats) {
+    if (!stats.length) return `<div class="empty">Aucun commercial dans ce périmètre.</div>`;
+    const max = Math.max(1, ...stats.map(s => Math.max(s.mrr, s.tgt))) * 1.05;
+    return `<div class="reps">${stats.map(s => `
+      <div class="rep-row" data-tip="<b>${esc(s.rep.name)}</b><br>MRR : ${fmt(s.mrr)}<br>Objectif à date : ${s.tgt ? fmt(s.tgt) : "—"}<br>Partenaires recrutés : ${s.recruited}<br>Partenaires productifs : ${s.partners}">
+        <div class="rep-name">${esc(s.rep.name)}<small>${s.recruited} recruté${s.recruited > 1 ? "s" : ""}</small></div>
+        <div class="track"><div class="bar" style="width:${(s.mrr / max) * 100}%"></div>${s.tgt ? `<div class="tgt" style="left:${(s.tgt / max) * 100}%"></div>` : ""}</div>
+        <div class="rep-val"><b>${fmt(s.mrr)}</b>${chip(s.ratio)}</div>
+      </div>`).join("")}</div>`;
+  }
+
+  function contextMonths(months) {
+    if (ui.gran === "all") return months.slice(-24);
+    const y = yOf(months[0]);
+    return range(ym(y, 1), ym(y, 12));
+  }
+
+  function monthChart(reps, months) {
+    const box = $("#monthChart");
+    if (!box) return;
+    const ctx = contextMonths(months);
+    const ids = new Set(reps.map(r => r.id));
+    const vals = ctx.map(k => S.partners.filter(p => ids.has(p.repId)).reduce((s, p) => s + mrrOf(p, k), 0));
+    const tline = target() * reps.filter(r => r.active !== false).length;
+    const W = 620, H = 260, L = 52, R = 8, T = 14, B = 28;
+    const top = niceMax(Math.max(tline, ...vals, 1));
+    const ticks = 4;
+    const y = v => T + (H - T - B) * (1 - v / top);
+    const bw = (W - L - R) / ctx.length;
+    const inSel = new Set(months);
+    let g = "";
+    for (let i = 0; i <= ticks; i++) {
+      const v = top * i / ticks, yy = y(v);
+      g += `<line x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}" stroke="var(--line)" stroke-width="1" ${i ? 'stroke-dasharray="2 3"' : ""}/>`;
+      g += `<text x="${L - 8}" y="${yy + 4}" text-anchor="end">${fmtK(v)}</text>`;
+    }
+    const labelEvery = ctx.length > 12 ? Math.ceil(ctx.length / 12) : 1;
+    ctx.forEach((k, i) => {
+      const x = L + i * bw, w = Math.max(2, bw - 6), h = Math.max(0, y(0) - y(vals[i]));
+      const sel = inSel.has(k), fut = k > CUR;
+      const r = Math.min(4, w / 2, h);
+      const x0 = x + 3, y0 = y(vals[i]);
+      if (h > 0) g += `<path d="M${x0},${y(0)} V${y0 + r} Q${x0},${y0} ${x0 + r},${y0} H${x0 + w - r} Q${x0 + w},${y0} ${x0 + w},${y0 + r} V${y(0)} Z" fill="var(--teal)" opacity="${sel ? 1 : 0.32}"/>`;
+      if (i % labelEvery === 0) g += `<text x="${x + bw / 2}" y="${H - 8}" text-anchor="middle" ${sel ? 'style="fill:var(--fg);font-weight:600"' : ""}>${ctx.length > 12 ? mLabel(k) : MONTHS[mOf(k) - 1]}</text>`;
+      const ratio = tline ? vals[i] / tline : NaN;
+      g += `<rect x="${x}" y="${T}" width="${bw}" height="${H - T - B}" fill="transparent" data-tip="<b>${esc(mLong(k))}</b><br>MRR : ${fmt(vals[i])}${tline ? `<br>Objectif : ${fmt(tline)} (${fut ? "à venir" : pct(ratio)})` : ""}"/>`;
+    });
+    if (tline) g += `<line x1="${L}" x2="${W - R}" y1="${y(tline)}" y2="${y(tline)}" stroke="var(--orange)" stroke-width="2" stroke-dasharray="6 4"/>`;
+    box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="MRR par mois">${g}</svg>`;
+  }
+  function niceMax(v) {
+    const p = Math.pow(10, Math.floor(Math.log10(v)));
+    for (const m of [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10]) if (m * p >= v * 1.04) return m * p;
+    return 10 * p;
+  }
+
+  function matrix(reps, months) {
+    const ctx = contextMonths(months);
+    const sel = new Set(months);
+    const rows = reps.map(r => {
+      const ps = S.partners.filter(p => p.repId === r.id);
+      const vals = ctx.map(k => ps.reduce((s, p) => s + mrrOf(p, k), 0));
+      const tot = vals.reduce((a, b) => a + b, 0);
+      const elapsedN = ctx.filter(k => k <= CUR).length;
+      const t = r.active === false ? 0 : target() * elapsedN;
+      return `<tr><td style="white-space:nowrap">${esc(r.name)}</td>${vals.map((v, i) => `<td class="n ${v ? "" : "zero"} ${sel.has(ctx[i]) ? "cur" : ""}">${ctx[i] > CUR ? "" : v ? fmt(v) : "–"}</td>`).join("")}<td class="n"><b>${fmt(tot)}</b></td><td class="n">${chip(t ? tot / t : NaN)}</td></tr>`;
+    }).join("");
+    const colTot = ctx.map(k => S.partners.filter(p => reps.some(r => r.id === p.repId)).reduce((s, p) => s + mrrOf(p, k), 0));
+    const all = colTot.reduce((a, b) => a + b, 0);
+    return `<table class="t"><thead><tr><th>Commercial</th>${ctx.map(k => `<th class="n ${sel.has(k) ? "cur" : ""}">${ctx.length > 12 ? mLabel(k) : MONTHS[mOf(k) - 1]}</th>`).join("")}<th class="n">Total</th><th class="n">Atteinte</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr><td>Équipe</td>${colTot.map((v, i) => `<td class="n ${sel.has(ctx[i]) ? "cur" : ""}">${ctx[i] > CUR ? "" : fmt(v)}</td>`).join("")}<td class="n">${fmt(all)}</td><td></td></tr></tfoot></table>`;
+  }
+
+  function topPartners(months, repIds) {
+    const list = S.partners.filter(p => repIds.has(p.repId)).map(p => ({ p, v: months.reduce((s, k) => s + mrrOf(p, k), 0) })).filter(x => x.v > 0).sort((a, b) => b.v - a.v).slice(0, 8);
+    if (!list.length) return `<div class="empty">Aucun MRR saisi sur cette période.</div>`;
+    return `<div class="tbl-wrap"><table class="t"><thead><tr><th>Partenaire</th><th>Commercial</th><th class="n">MRR</th></tr></thead><tbody>
+      ${list.map(x => `<tr><td>${esc(x.p.name)}</td><td class="muted">${esc(repName(x.p.repId))}</td><td class="n"><b>${fmt(x.v)}</b></td></tr>`).join("")}</tbody></table></div>`;
+  }
+
+  // ----- Entry -----
+  function renderEntry() {
+    const el = $("#view-entry");
+    if (!S.loaded) { el.innerHTML = ""; return; }
+    if (!S.reps.length) { el.innerHTML = emptyTeam(); return; }
+    // keep what the person is typing across live refreshes
+    const f = document.activeElement;
+    const keep = f && f.classList && f.classList.contains("mrr-in") ? { pid: f.dataset.pid, val: f.value, s: f.selectionStart } : null;
+
+    const k = ui.entryMonth;
+    const ps = S.partners
+      .filter(p => ui.entryRep === "all" || p.repId === ui.entryRep)
+      .filter(p => !p.recruited || p.recruited <= k)
+      .sort((a, b) => repName(a.repId).localeCompare(repName(b.repId), "fr") || a.name.localeCompare(b.name, "fr"));
+    const monthTot = ps.reduce((s, p) => s + mrrOf(p, k), 0);
+    const ro = !S.canWrite;
+
+    el.innerHTML = `<div class="entry-layout">
+      <div class="card">
+        <h2>Nouveau partenaire</h2>
+        <p class="sub">Enregistrez un partenaire dès sa signature.</p>
+        <form class="stack" id="newPartner">
+          <label class="field"><span>Nom du partenaire</span><input type="text" id="np-name" required maxlength="120" placeholder="Ex. Telecom Services Lyon" ${ro ? "disabled" : ""}></label>
+          <label class="field"><span>Commercial</span><select id="np-rep" required ${ro ? "disabled" : ""}>${activeReps().map(r => `<option value="${r.id}" ${ui.entryRep === r.id ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select></label>
+          <label class="field"><span>Mois de recrutement</span><input type="month" id="np-month" value="${CUR}" max="${CUR}" required ${ro ? "disabled" : ""}></label>
+          <label class="field"><span>MRR du premier mois (€, facultatif)</span><input type="number" id="np-mrr" min="0" step="1" inputmode="numeric" placeholder="0" ${ro ? "disabled" : ""}></label>
+          <button class="btn primary" type="submit" ${ro ? "disabled" : ""}>Ajouter le partenaire</button>
+        </form>
+      </div>
+      <div class="card">
+        <div class="toolbar">
+          <div><h2>MRR de ${esc(mLong(k))}</h2><p class="sub" style="margin:0">Saisissez le MRR généré dans le mois par chaque partenaire. Chaque montant est enregistré dès que vous quittez la case.</p></div>
+        </div>
+        <div class="filters" style="margin-bottom:14px">
+          <label class="field"><span>Mois</span><input type="month" id="entryMonth" value="${k}" max="${CUR}"></label>
+          <label class="field"><span>Commercial</span><select id="entryRep"><option value="all">Tous</option>${sortedReps().map(r => `<option value="${r.id}" ${ui.entryRep === r.id ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select></label>
+          <div class="field"><span>Total du mois</span><b class="num" style="font-size:18px;line-height:36px">${fmt(monthTot)}</b></div>
+        </div>
+        ${ps.length ? `<div class="tbl-wrap" id="entryTable"><table class="t">
+          <thead><tr><th>Partenaire</th><th>Commercial</th><th>Recruté</th><th class="n">MRR ${esc(mLabel(k))}</th><th class="n">Cumul</th></tr></thead>
+          <tbody>${ps.map(p => {
+            const v = (p.mrr || {})[k];
+            const cum = Object.values(p.mrr || {}).reduce((s, x) => s + (+x || 0), 0);
+            return `<tr><td><b>${esc(p.name)}</b></td><td class="muted">${esc(repName(p.repId))}</td><td class="muted num">${p.recruited ? mLabel(p.recruited) : "—"}</td>
+              <td class="n"><input class="mrr-in" type="number" min="0" step="1" inputmode="numeric" aria-label="MRR ${esc(p.name)}" data-pid="${p.id}" value="${v ?? ""}" placeholder="0" ${ro ? "disabled" : ""}></td>
+              <td class="n">${fmt(cum)}</td></tr>`;
+          }).join("")}</tbody></table></div>`
+          : `<div class="empty"><strong>Aucun partenaire pour ce mois</strong><span>Ajoutez un partenaire avec le formulaire, ou choisissez un autre mois ou commercial.</span></div>`}
+      </div>
+    </div>`;
+    if (keep) {
+      const inp = $(`.mrr-in[data-pid="${keep.pid}"]`);
+      if (inp) { inp.value = keep.val; inp.focus(); try { inp.setSelectionRange(keep.s, keep.s); } catch {} }
+    }
+  }
+
+  // ----- Partners -----
+  function renderPartners() {
+    const el = $("#view-partners");
+    if (!S.loaded) { el.innerHTML = ""; return; }
+    if (!S.reps.length) { el.innerHTML = emptyTeam(); return; }
+    const q = ui.partnerQ.trim().toLowerCase();
+    const ps = S.partners
+      .filter(p => ui.partnerRep === "all" || p.repId === ui.partnerRep)
+      .filter(p => !q || p.name.toLowerCase().includes(q))
+      .sort((a, b) => (b.recruited || "").localeCompare(a.recruited || "") || a.name.localeCompare(b.name, "fr"));
+    const ro = !S.canWrite;
+    el.innerHTML = `<div class="card">
+      <div class="toolbar"><div><h2>Partenaires recrutés</h2><p class="sub" style="margin:0">${S.partners.length} partenaire${S.partners.length > 1 ? "s" : ""} au total</p></div>
+        <div class="filters">
+          <label class="field"><span>Rechercher</span><input type="text" id="pq" value="${esc(ui.partnerQ)}" placeholder="Nom du partenaire"></label>
+          <label class="field"><span>Commercial</span><select id="pRep"><option value="all">Tous</option>${sortedReps().map(r => `<option value="${r.id}" ${ui.partnerRep === r.id ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select></label>
+        </div></div>
+      ${ps.length ? `<div class="tbl-wrap"><table class="t"><thead><tr><th>Partenaire</th><th>Commercial</th><th>Recruté</th><th class="n">Mois saisis</th><th class="n">MRR cumulé</th><th class="n">Dernier mois</th><th></th></tr></thead><tbody>
+        ${ps.map(p => {
+          const ks = Object.keys(p.mrr || {}).filter(k => mrrOf(p, k) > 0).sort();
+          const last = ks[ks.length - 1];
+          const cum = ks.reduce((s, k) => s + mrrOf(p, k), 0);
+          return `<tr><td><b>${esc(p.name)}</b></td><td>${esc(repName(p.repId))}</td><td class="num">${p.recruited ? mLong(p.recruited) : "—"}</td><td class="n">${ks.length}</td><td class="n"><b>${fmt(cum)}</b></td><td class="n muted">${last ? mLabel(last) + " · " + fmt(mrrOf(p, last)) : "—"}</td>
+            <td class="n">${ro ? "" : `<button class="btn ghost" data-edit="${p.id}">Modifier</button>`}</td></tr>`;
+        }).join("")}</tbody></table></div>`
+        : `<div class="empty"><strong>Aucun partenaire trouvé</strong><span>${S.partners.length ? "Modifiez la recherche ou le filtre." : "Ajoutez votre premier partenaire depuis l'onglet « Saisie MRR »."}</span>${!S.partners.length && !ro ? `<button class="btn primary" data-goto="entry">Ajouter un partenaire</button>` : ""}</div>`}
+    </div>`;
+  }
+
+  // ----- Team -----
+  function renderTeam() {
+    const el = $("#view-team");
+    if (!S.loaded) { el.innerHTML = ""; return; }
+    const ro = !S.canWrite;
+    const reps = sortedReps();
+    el.innerHTML = `<div class="grid2">
+      <div class="card">
+        <h2>Commerciaux</h2>
+        <p class="sub">${reps.filter(r => r.active !== false).length} actif${reps.filter(r => r.active !== false).length > 1 ? "s" : ""}. Un commercial inactif garde son historique mais n'a plus d'objectif.</p>
+        ${reps.length ? `<div class="tbl-wrap"><table class="t"><thead><tr><th>Nom</th><th>Statut</th><th class="n">Partenaires</th><th></th></tr></thead><tbody>
+          ${reps.map(r => {
+            const n = S.partners.filter(p => p.repId === r.id).length;
+            return `<tr><td><input type="text" class="rep-name-in" data-rid="${r.id}" value="${esc(r.name)}" maxlength="60" aria-label="Nom du commercial" ${ro ? "disabled" : ""} style="width:100%"></td>
+              <td><button class="btn ghost" data-toggle="${r.id}" ${ro ? "disabled" : ""}>${r.active === false ? "Inactif · réactiver" : "Actif · désactiver"}</button></td>
+              <td class="n">${n}</td>
+              <td class="n">${ro ? "" : n ? "" : `<button class="btn ghost danger" data-delrep="${r.id}">Supprimer</button>`}</td></tr>`;
+          }).join("")}</tbody></table></div>` : `<div class="empty"><strong>Aucun commercial pour l'instant</strong><span>Ajoutez-les un par un, ou créez 9 fiches à renommer.</span>${ro ? "" : `<button class="btn" data-act="seed9">Créer 9 commerciaux à renommer</button>`}</div>`}
+        ${ro ? "" : `<form class="filters" id="newRep" style="margin-top:14px"><label class="field" style="flex:1"><span>Nouveau commercial</span><input type="text" id="nr-name" maxlength="60" required placeholder="Prénom Nom"></label><button class="btn primary" type="submit">Ajouter</button></form>`}
+      </div>
+      <div class="card">
+        <h2>Objectif</h2>
+        <p class="sub">MRR que chaque commercial doit générer chaque mois avec ses nouveaux partenaires. L'objectif d'une période = objectif mensuel × nombre de mois × commerciaux actifs.</p>
+        <form class="filters" id="targetForm"><label class="field"><span>Objectif mensuel par commercial (€)</span><input type="number" id="tgt" min="0" step="50" value="${target()}" ${ro ? "disabled" : ""}></label>${ro ? "" : `<button class="btn primary" type="submit">Enregistrer</button>`}</form>
+        <div class="kpis" style="margin-top:18px">
+          <div class="kpi" style="box-shadow:none;background:var(--surface-2)"><span class="label">Équipe / mois</span><span class="v">${fmt(target() * reps.filter(r => r.active !== false).length)}</span></div>
+          <div class="kpi" style="box-shadow:none;background:var(--surface-2)"><span class="label">Équipe / trimestre</span><span class="v">${fmt(target() * 3 * reps.filter(r => r.active !== false).length)}</span></div>
+          <div class="kpi" style="box-shadow:none;background:var(--surface-2)"><span class="label">Équipe / an</span><span class="v">${fmt(target() * 12 * reps.filter(r => r.active !== false).length)}</span></div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ---------- modal ----------
+  function openEdit(id) {
+    const p = S.partners.find(x => x.id === id);
+    if (!p) return;
+    $("#modalRoot").innerHTML = `<div class="overlay" id="ov"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mt">
+      <h3 id="mt">Modifier le partenaire</h3>
+      <form class="stack" id="editForm">
+        <label class="field"><span>Nom</span><input type="text" id="ed-name" value="${esc(p.name)}" maxlength="120" required></label>
+        <label class="field"><span>Commercial</span><select id="ed-rep">${sortedReps().map(r => `<option value="${r.id}" ${r.id === p.repId ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select></label>
+        <label class="field"><span>Mois de recrutement</span><input type="month" id="ed-month" value="${p.recruited || ""}" max="${CUR}" required></label>
+        <div class="acts"><button type="button" class="btn danger" id="ed-del">Supprimer</button>
+          <span style="display:flex;gap:8px"><button type="button" class="btn" id="ed-cancel">Annuler</button><button type="submit" class="btn primary">Enregistrer</button></span></div>
+      </form></div></div>`;
+    $("#ed-name").focus();
+    const close = () => { $("#modalRoot").innerHTML = ""; };
+    $("#ov").addEventListener("click", e => { if (e.target.id === "ov") close(); });
+    $("#ed-cancel").onclick = close;
+    $("#ov").addEventListener("keydown", e => { if (e.key === "Escape") close(); });
+    $("#ed-del").onclick = async e => {
+      const b = e.currentTarget;
+      if (!b.classList.contains("armed")) { b.classList.add("armed"); b.textContent = "Confirmer la suppression"; return; }
+      close(); await guarded(() => api.deletePartner(id), "Partenaire supprimé");
+    };
+    $("#editForm").onsubmit = async e => {
+      e.preventDefault();
+      const np = { ...p, mrr: { ...(p.mrr || {}) }, name: $("#ed-name").value.trim(), repId: $("#ed-rep").value, recruited: $("#ed-month").value, updatedAt: Date.now() };
+      if (!np.name) return;
+      close(); await guarded(() => api.savePartner(np), "Partenaire mis à jour");
+    };
+  }
+
+  let toastT;
+  function toast(msg) {
+    let t = $("#toast");
+    if (!t) { t = document.createElement("div"); t.id = "toast"; t.className = "toast"; t.setAttribute("role", "status"); document.body.appendChild(t); }
+    t.textContent = msg; t.hidden = false;
+    clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 2600);
+  }
+
+  // ---------- CSV ----------
+  function csv() {
+    const rows = [["Partenaire", "Commercial", "Mois de recrutement", "Mois", "MRR (EUR)"]];
+    for (const p of S.partners) for (const k of Object.keys(p.mrr || {}).sort()) if (mrrOf(p, k)) rows.push([p.name, repName(p.repId), p.recruited || "", k, mrrOf(p, k)]);
+    return "﻿" + rows.map(r => r.map(c => /[";\n]/.test(String(c)) ? `"${String(c).replace(/"/g, '""')}"` : c).join(";")).join("\n");
+  }
+  async function exportCsv() {
+    const data = csv();
+    if (downloads) {
+      try { const r = await downloads.save({ filename: `mrr-partenaires-${CUR}.csv`, data }); if (r && r.status === "saved") toast("Export enregistré"); return; }
+      catch (e) { if (e && (e.code === "declined" || e.code === "rate_limited")) return; }
+    }
+    try { await navigator.clipboard.writeText(data); toast("CSV copié dans le presse-papiers"); }
+    catch { toast("Export indisponible dans cette vue."); }
+  }
+
+  // ---------- demo (local mode only) ----------
+  function loadDemo() {
+    const names = ["Commercial A", "Commercial B", "Commercial C", "Commercial D", "Commercial E", "Commercial F", "Commercial G", "Commercial H", "Commercial I"];
+    S.reps = names.map((n, i) => ({ id: "demo-r" + i, name: n + " (exemple)", order: i, active: true }));
+    S.partners = [];
+    let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+    const start = addM(CUR, -11);
+    S.reps.forEach((r, i) => {
+      const n = 2 + Math.floor(rnd() * 4);
+      for (let j = 0; j < n; j++) {
+        const rec = addM(start, Math.floor(rnd() * 11));
+        const mrr = {}; let base = 80 + Math.round(rnd() * 250);
+        for (const k of range(rec, CUR)) { mrr[k] = Math.round(base); base *= 1 + rnd() * 0.08; }
+        S.partners.push({ id: `demo-p${i}-${j}`, name: `Partenaire exemple ${i + 1}.${j + 1}`, repId: r.id, recruited: rec, mrr, createdAt: Date.now() });
+      }
+    });
+    local.persist(); render(); toast("Exemple chargé : remplacez-le par vos vraies données");
+  }
+
+  // ---------- events ----------
+  document.addEventListener("click", async e => {
+    const t = e.target.closest("button, [data-goto]");
+    if (!t) return;
+    if (t.dataset.tab) { ui.tab = t.dataset.tab; savePrefs(); render(); return; }
+    if (t.dataset.goto) { ui.tab = t.dataset.goto; savePrefs(); render(); return; }
+    if (t.dataset.gran) { ui.gran = t.dataset.gran; ui.period = defaultPeriod(ui.gran); savePrefs(); render(); return; }
+    if (t.dataset.edit) { openEdit(t.dataset.edit); return; }
+    if (t.dataset.toggle) { const r = S.reps.find(x => x.id === t.dataset.toggle); if (r) await guarded(() => api.saveRep({ ...r, active: r.active === false })); return; }
+    if (t.dataset.delrep) {
+      if (!t.classList.contains("armed")) { t.classList.add("armed"); t.textContent = "Confirmer"; return; }
+      await guarded(() => api.deleteRep(t.dataset.delrep), "Commercial supprimé"); return;
+    }
+    const act = t.dataset.act;
+    if (act === "export") exportCsv();
+    if (act === "demo") loadDemo();
+    if (act === "seed9") {
+      for (let i = 0; i < 9; i++) { const ok = await guarded(() => api.saveRep({ id: uid("r"), name: `Commercial ${i + 1}`, order: i, active: true })); if (!ok) break; }
+      toast("9 commerciaux créés : renommez-les ci-dessous");
+    }
+  });
+
+  document.addEventListener("change", async e => {
+    const t = e.target;
+    if (t.id === "periodSel") { ui.period = t.value; render(); }
+    if (t.id === "dashRep") { ui.dashRep = t.value; render(); }
+    if (t.id === "entryMonth") { if (t.value) { ui.entryMonth = t.value > CUR ? CUR : t.value; render(); } }
+    if (t.id === "entryRep") { ui.entryRep = t.value; savePrefs(); render(); }
+    if (t.id === "pRep") { ui.partnerRep = t.value; render(); }
+    if (t.classList.contains("mrr-in")) {
+      const p = S.partners.find(x => x.id === t.dataset.pid);
+      if (!p) return;
+      const raw = t.value.trim();
+      const v = raw === "" ? null : Math.max(0, Math.round(+raw));
+      if (raw !== "" && !isFinite(v)) return;
+      const cur = (p.mrr || {})[ui.entryMonth];
+      if ((cur ?? null) === v) return;
+      const mrr = { ...(p.mrr || {}) };
+      if (v === null) delete mrr[ui.entryMonth]; else mrr[ui.entryMonth] = v;
+      await guarded(() => api.savePartner({ ...p, mrr, updatedAt: Date.now() }), `${p.name} : ${v === null ? "montant effacé" : fmt(v) + " enregistré"}`);
+    }
+    if (t.classList.contains("rep-name-in")) {
+      const r = S.reps.find(x => x.id === t.dataset.rid);
+      const name = t.value.trim();
+      if (r && name && name !== r.name) await guarded(() => api.saveRep({ ...r, name }), "Nom enregistré");
+      else if (r) t.value = r.name;
+    }
+  });
+
+  document.addEventListener("input", e => {
+    if (e.target.id === "pq") {
+      ui.partnerQ = e.target.value;
+      const pos = e.target.selectionStart;
+      renderPartners();
+      const n = $("#pq"); n.focus(); try { n.setSelectionRange(pos, pos); } catch {}
+    }
+  });
+
+  document.addEventListener("submit", async e => {
+    const f = e.target;
+    e.preventDefault();
+    if (f.id === "newPartner") {
+      const name = $("#np-name").value.trim(), repId = $("#np-rep").value, rec = $("#np-month").value, m = $("#np-mrr").value.trim();
+      if (!name || !repId || !rec) return;
+      const mrr = {}; if (m !== "" && +m >= 0) mrr[rec] = Math.round(+m);
+      const ok = await guarded(() => api.savePartner({ id: uid("p"), name, repId, recruited: rec, mrr, createdAt: Date.now(), updatedAt: Date.now() }), `${name} ajouté`);
+      if (ok) { ui.entryMonth = rec; const n = $("#np-name"); if (n) { n.value = ""; n.focus(); } const mm = $("#np-mrr"); if (mm) mm.value = ""; }
+    }
+    if (f.id === "newRep") {
+      const name = $("#nr-name").value.trim();
+      if (!name) return;
+      const order = Math.max(-1, ...S.reps.map(r => r.order ?? 0)) + 1;
+      if (await guarded(() => api.saveRep({ id: uid("r"), name, order, active: true }), `${name} ajouté`)) { const n = $("#nr-name"); if (n) { n.value = ""; n.focus(); } }
+    }
+    if (f.id === "targetForm") {
+      const v = Math.max(0, Math.round(+$("#tgt").value || 0));
+      await guarded(() => api.saveSettings({ ...S.settings, monthlyTarget: v }), "Objectif enregistré");
+    }
+  });
+
+  // tooltips
+  const tip = $("#tip");
+  document.addEventListener("pointermove", e => {
+    const t = e.target.closest && e.target.closest("[data-tip]");
+    if (!t) { tip.hidden = true; return; }
+    tip.innerHTML = t.getAttribute("data-tip");
+    tip.hidden = false;
+    const w = tip.offsetWidth, h = tip.offsetHeight;
+    let x = e.clientX + 14, y = e.clientY + 14;
+    if (x + w > innerWidth - 8) x = e.clientX - w - 14;
+    if (y + h > innerHeight - 8) y = e.clientY - h - 14;
+    tip.style.left = Math.max(8, x) + "px"; tip.style.top = Math.max(8, y) + "px";
+  });
+  document.addEventListener("pointerleave", () => { tip.hidden = true; });
+
+  render();
+  boot();
+})();
+</script>
