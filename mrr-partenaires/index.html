@@ -149,8 +149,24 @@ table.t th.cur, table.t td.cur { background: var(--teal-soft); }
 .mrr-in.pre { border-color: var(--warn); background: var(--warn-bg); }
 .rec-in { width: 140px; min-height: 32px !important; padding: 4px 6px !important; }
 .oip-in { width: 110px; min-height: 32px !important; padding: 4px 6px !important; }
-.oip-in:placeholder-shown, .prod-in:placeholder-shown { border-style: dashed; }
-.prod-in { width: 130px; min-height: 32px !important; padding: 4px 6px !important; }
+.oip-in:placeholder-shown { border-style: dashed; }
+.prod-btn { display: inline-flex; align-items: center; justify-content: space-between; gap: 6px; width: 170px; min-height: 32px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); cursor: pointer; text-align: left; font-size: 13px; }
+.prod-btn.wide { width: 100%; min-height: 36px; }
+.prod-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.prod-btn .ph { color: var(--muted); }
+.prod-btn.empty-v { border-style: dashed; }
+.prod-btn:hover { border-color: var(--teal); }
+.prod-btn:disabled { opacity: .6; cursor: default; }
+.pick-back { position: fixed; inset: 0; z-index: 45; }
+.pick { position: fixed; z-index: 46; width: 250px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); padding: 10px; display: grid; gap: 8px; }
+.pick-q { width: 100%; }
+.pick-list { max-height: 240px; overflow-y: auto; display: grid; }
+.pick-item { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-radius: 4px; cursor: pointer; }
+.pick-item:hover { background: var(--surface-2); }
+.pick-item[hidden] { display: none; }
+.pick-item input { width: 16px; height: 16px; accent-color: var(--teal); flex: none; }
+.pick-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; color: var(--fg-2); }
+textarea#prodCat { width: 100%; min-height: 220px; background: var(--surface); border: 1px solid var(--line); border-radius: 5px; padding: 8px 10px; font: inherit; color: inherit; resize: vertical; }
 table.grid td, table.grid th { padding: 5px 4px; }
 table.grid td.sticky, table.grid th.sticky { position: sticky; left: 0; background: var(--surface); z-index: 1; min-width: 170px; max-width: 240px; padding-left: 8px; box-shadow: 1px 0 0 var(--line); }
 table.grid td.sticky small { display: block; color: var(--muted); font-size: 11px; }
@@ -207,6 +223,7 @@ form.stack { display: grid; gap: 12px; }
 </main>
 <div class="tip" id="tip" hidden></div>
 <div id="modalRoot"></div>
+<div id="pickRoot"></div>
 
 <script>
 (() => {
@@ -251,6 +268,7 @@ form.stack { display: grid; gap: 12px; }
     entryQ: "",
     entryRep: prefs.entryRep || "all",
     partnerRep: "all",
+    npProducts: [],
     teamYear: now.getFullYear(),
     partnerQ: ""
   };
@@ -327,7 +345,11 @@ form.stack { display: grid; gap: 12px; }
   const targetFor = k => { const o = (S.settings.targets || {})[k]; return o === undefined || o === null ? target() : +o || 0; };
   const sumTargets = ks => ks.reduce((t, k) => t + targetFor(k), 0);
   const mrrOf = (p, k) => +((p.mrr || {})[k]) || 0;
-  const productList = () => `<datalist id="productList">${[...new Set(["DFP", ...S.partners.map(p => (p.product || "").trim()).filter(Boolean)])].sort((a, b) => a.localeCompare(b, "fr")).map(v => `<option value="${esc(v)}"></option>`).join("")}</datalist>`;
+  const DEFAULT_PRODUCTS = ["Accès internet", "Call2Teams", "Cloud", "Couverture GSM", "Couverture Wifi", "Dstny UCaaS", "Dstny Digital Assistant", "Mobile", "Phonio", "Services & Installation", "Téléphonie IP", "Téléphonie Standard", "VoIPcube"];
+  const catalog = () => (Array.isArray(S.settings.products) && S.settings.products.length ? S.settings.products : DEFAULT_PRODUCTS);
+  // products a partner sells (older entries kept a single "product" text)
+  const prods = p => Array.isArray(p.products) ? p.products : (p.product ? [p.product] : []);
+  const prodBtn = (id, arr, ro, wide) => `<button type="button" class="prod-btn${wide ? " wide" : ""}${arr.length ? "" : " empty-v"}" data-pick="${id}" title="${esc(arr.join(", "))}" aria-label="Type de produit DFP : ${esc(arr.join(", ") || "aucun")}" ${ro ? "disabled" : ""}><span>${arr.length ? esc(arr.length <= 2 ? arr.join(", ") : arr.slice(0, 2).join(", ") + " +" + (arr.length - 2)) : '<span class="ph">À saisir</span>'}</span><span aria-hidden="true">▾</span></button>`;
 
   function dataBounds() {
     let min = CUR;
@@ -592,7 +614,7 @@ form.stack { display: grid; gap: 12px; }
     const ps = S.partners
       .filter(p => ui.entryRep === "all" || p.repId === ui.entryRep)
       .filter(p => !p.recruited || yOf(p.recruited) <= y)
-      .filter(p => !q || p.name.toLowerCase().includes(q) || (p.oip || "").toLowerCase().includes(q) || (p.product || "").toLowerCase().includes(q))
+      .filter(p => !q || p.name.toLowerCase().includes(q) || (p.oip || "").toLowerCase().includes(q) || prods(p).join(" ").toLowerCase().includes(q))
       .sort((a, b) => (a.recruited || "").localeCompare(b.recruited || "") || a.name.localeCompare(b.name, "fr"));
     const ro = !S.canWrite;
     const colTot = months.map(k => ps.reduce((t, p) => t + mrrOf(p, k), 0));
@@ -608,8 +630,7 @@ form.stack { display: grid; gap: 12px; }
           <label class="field" style="flex:1 1 160px"><span>Commercial</span><select id="np-rep" required ${ro ? "disabled" : ""}>${activeReps().map(r => `<option value="${r.id}" ${ui.entryRep === r.id ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select></label>
           <label class="field" style="flex:1 1 150px"><span>Mois de recrutement</span><input type="month" id="np-month" value="${CUR}" max="${CUR}" required ${ro ? "disabled" : ""}></label>
           <label class="field" style="flex:1 1 130px"><span>OIP (facultatif)</span><input type="text" id="np-oip" maxlength="60" placeholder="N° OIP" ${ro ? "disabled" : ""}></label>
-          <label class="field" style="flex:1 1 140px"><span>Type de produit DFP</span><input type="text" id="np-prod" list="productList" maxlength="60" placeholder="Ex. DFP" ${ro ? "disabled" : ""}></label>
-          ${productList()}
+          <div class="field" style="flex:1 1 170px"><span>Type de produit DFP</span>${prodBtn("new", ui.npProducts, ro, true)}</div>
           <button class="btn primary" type="submit" ${ro ? "disabled" : ""}>Ajouter le partenaire</button>
         </form>
       </div>
@@ -632,7 +653,7 @@ form.stack { display: grid; gap: 12px; }
             return `<tr><td class="sticky"><b>${esc(p.name)}</b><small>${esc(repName(p.repId))}</small></td>
               <td><input class="rec-in" type="month" data-pid="${p.id}" value="${p.recruited || ""}" max="${CUR}" aria-label="Mois de recrutement ${esc(p.name)}" ${ro ? "disabled" : ""}></td>
               <td><input class="oip-in" type="text" data-pid="${p.id}" value="${esc(p.oip || "")}" maxlength="60" placeholder="À saisir" aria-label="OIP ${esc(p.name)}" ${ro ? "disabled" : ""}></td>
-              <td><input class="prod-in" type="text" list="productList" data-pid="${p.id}" value="${esc(p.product || "")}" maxlength="60" placeholder="À saisir" aria-label="Type de produit DFP ${esc(p.name)}" ${ro ? "disabled" : ""}></td>
+              <td>${prodBtn(p.id, prods(p), ro)}</td>
               ${months.map(k => {
                 const before = p.recruited && k < p.recruited;
                 const closed = (before && !mrrOf(p, k)) || k > CUR;
@@ -678,7 +699,7 @@ form.stack { display: grid; gap: 12px; }
           const ks = Object.keys(p.mrr || {}).filter(k => mrrOf(p, k) > 0).sort();
           const last = ks[ks.length - 1];
           const cum = ks.reduce((s, k) => s + mrrOf(p, k), 0);
-          return `<tr><td><b>${esc(p.name)}</b></td><td class="${p.oip ? "" : "muted"}">${p.oip ? esc(p.oip) : "—"}</td><td class="${p.product ? "" : "muted"}">${p.product ? esc(p.product) : "—"}</td><td>${esc(repName(p.repId))}</td><td class="num">${p.recruited ? mLong(p.recruited) : "—"}</td><td class="n">${ks.length}</td><td class="n"><b>${fmt(cum)}</b></td><td class="n muted">${last ? mLabel(last) + " · " + fmt(mrrOf(p, last)) : "—"}</td>
+          return `<tr><td><b>${esc(p.name)}</b></td><td class="${p.oip ? "" : "muted"}">${p.oip ? esc(p.oip) : "—"}</td><td class="${prods(p).length ? "" : "muted"}">${prods(p).length ? esc(prods(p).join(", ")) : "—"}</td><td>${esc(repName(p.repId))}</td><td class="num">${p.recruited ? mLong(p.recruited) : "—"}</td><td class="n">${ks.length}</td><td class="n"><b>${fmt(cum)}</b></td><td class="n muted">${last ? mLabel(last) + " · " + fmt(mrrOf(p, last)) : "—"}</td>
             <td class="n">${ro ? "" : `<button class="btn ghost" data-edit="${p.id}">Modifier</button>`}</td></tr>`;
         }).join("")}</tbody></table></div>`
         : `<div class="empty"><strong>Aucun partenaire trouvé</strong><span>${S.partners.length ? "Modifiez la recherche ou le filtre." : "Ajoutez votre premier partenaire depuis l'onglet « Saisie MRR »."}</span>${!S.partners.length && !ro ? `<button class="btn primary" data-goto="entry">Ajouter un partenaire</button>` : ""}</div>`}
@@ -726,13 +747,23 @@ form.stack { display: grid; gap: 12px; }
           <p class="sub" style="margin:12px 0 0">Année ${ty} : ${fmt(sumTargets(ms))} par commercial, ${fmt(sumTargets(ms) * nAct)} pour l'équipe (${nAct} actif${nAct > 1 ? "s" : ""}).</p>`;
         })()}
       </div>
+    </div>
+    <div class="card" style="margin-top:20px">
+      <h2>Types de produit DFP</h2>
+      <p class="sub">La liste proposée dans le menu déroulant « Type de produit DFP ». Un produit par ligne. Retirer un produit ici ne l'efface pas des partenaires qui l'ont déjà.</p>
+      <form id="prodForm" style="display:grid;gap:12px;max-width:420px">
+        <textarea id="prodCat" aria-label="Liste des produits" ${ro ? "disabled" : ""}>${esc(catalog().join("\n"))}</textarea>
+        ${ro ? "" : `<div><button class="btn primary" type="submit">Enregistrer la liste</button></div>`}
+      </form>
     </div>`;
   }
 
   // ---------- modal ----------
+  let editProducts = [];
   function openEdit(id) {
     const p = S.partners.find(x => x.id === id);
     if (!p) return;
+    editProducts = [...prods(p)];
     $("#modalRoot").innerHTML = `<div class="overlay" id="ov"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mt">
       <h3 id="mt">Modifier le partenaire</h3>
       <form class="stack" id="editForm">
@@ -740,8 +771,7 @@ form.stack { display: grid; gap: 12px; }
         <label class="field"><span>Commercial</span><select id="ed-rep">${sortedReps().map(r => `<option value="${r.id}" ${r.id === p.repId ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select></label>
         <label class="field"><span>Mois de recrutement</span><input type="month" id="ed-month" value="${p.recruited || ""}" max="${CUR}" required></label>
         <label class="field"><span>OIP</span><input type="text" id="ed-oip" value="${esc(p.oip || "")}" maxlength="60"></label>
-        <label class="field"><span>Type de produit DFP</span><input type="text" id="ed-prod" list="productList" value="${esc(p.product || "")}" maxlength="60"></label>
-        ${productList()}
+        <div class="field"><span>Type de produit DFP</span><div id="edProdWrap">${prodBtn("edit", editProducts, false, true)}</div></div>
         <div class="acts"><button type="button" class="btn danger" id="ed-del">Supprimer</button>
           <span style="display:flex;gap:8px"><button type="button" class="btn" id="ed-cancel">Annuler</button><button type="submit" class="btn primary">Enregistrer</button></span></div>
       </form></div></div>`;
@@ -757,11 +787,74 @@ form.stack { display: grid; gap: 12px; }
     };
     $("#editForm").onsubmit = async e => {
       e.preventDefault();
-      const np = { ...p, mrr: { ...(p.mrr || {}) }, name: $("#ed-name").value.trim(), repId: $("#ed-rep").value, recruited: $("#ed-month").value, oip: $("#ed-oip").value.trim(), product: $("#ed-prod").value.trim(), updatedAt: Date.now() };
+      const np = { ...p, mrr: { ...(p.mrr || {}) }, name: $("#ed-name").value.trim(), repId: $("#ed-rep").value, recruited: $("#ed-month").value, oip: $("#ed-oip").value.trim(), products: [...editProducts], product: undefined, updatedAt: Date.now() };
       if (!np.name) return;
       close(); await guarded(() => api.savePartner(np), "Partenaire mis à jour");
     };
   }
+
+  // ---------- product picker (multi-select dropdown) ----------
+  let pick = null;
+  function selectedFor(id) {
+    if (id === "new") return ui.npProducts;
+    if (id === "edit") return editProducts;
+    const p = S.partners.find(x => x.id === id);
+    return p ? prods(p) : [];
+  }
+  function openPicker(btn) {
+    const id = btn.dataset.pick, cur = selectedFor(id);
+    pick = { id, orig: [...cur], btn };
+    const items = [...new Set([...catalog(), ...cur])];
+    $("#pickRoot").innerHTML = `<div class="pick-back" data-pick-close></div>
+      <div class="pick" role="dialog" aria-label="Type de produit DFP">
+        <input type="text" class="pick-q" placeholder="Rechercher" aria-label="Rechercher un produit">
+        <div class="pick-list">${items.map(v => `<label class="pick-item"><input type="checkbox" value="${esc(v)}" ${cur.includes(v) ? "checked" : ""}><span>${esc(v)}</span></label>`).join("")}</div>
+        <div class="pick-foot"><span id="pickCount">${cur.length} sélectionné${cur.length > 1 ? "s" : ""}</span><button type="button" class="btn primary" data-pick-close>Valider</button></div>
+      </div>`;
+    const el = $(".pick"), r = btn.getBoundingClientRect();
+    const h = el.offsetHeight;
+    el.style.left = Math.max(8, Math.min(r.left, innerWidth - el.offsetWidth - 8)) + "px";
+    el.style.top = (r.bottom + 4 + h > innerHeight - 8 ? Math.max(8, r.top - h - 4) : r.bottom + 4) + "px";
+    $(".pick-q").focus();
+  }
+  async function closePicker() {
+    if (!pick) return;
+    const { id, orig, btn } = pick;
+    const checked = new Set($$(".pick-list input:checked").map(i => i.value));
+    const order = [...new Set([...catalog(), ...orig])];
+    const next = order.filter(v => checked.has(v));
+    pick = null;
+    $("#pickRoot").innerHTML = "";
+    if (next.join("|") === orig.join("|")) { btn.focus(); return; }
+    if (id === "new" || id === "edit") {
+      if (id === "new") ui.npProducts = next; else editProducts = next;
+      const tpl = document.createElement("template"); tpl.innerHTML = prodBtn(id, next, false, true);
+      btn.replaceWith(tpl.content.firstChild);
+      return;
+    }
+    const p = S.partners.find(x => x.id === id);
+    if (p) await guarded(() => api.savePartner({ ...p, products: next, product: undefined, updatedAt: Date.now() }), `${p.name} : ${next.length ? next.length + " produit" + (next.length > 1 ? "s" : "") : "aucun produit"}`);
+  }
+  document.addEventListener("input", e => {
+    if (e.target.classList && e.target.classList.contains("pick-q")) {
+      const q = e.target.value.trim().toLowerCase();
+      $$(".pick-item").forEach(l => { l.hidden = q && !l.textContent.toLowerCase().includes(q); });
+    }
+  });
+  document.addEventListener("change", e => {
+    if (e.target.closest && e.target.closest(".pick-list")) {
+      const n = $$(".pick-list input:checked").length;
+      $("#pickCount").textContent = `${n} sélectionné${n > 1 ? "s" : ""}`;
+    }
+  });
+  document.addEventListener("keydown", e => {
+    if (pick && e.key === "Escape") { e.stopPropagation(); closePicker(); }
+    if (pick && e.key === "Enter" && e.target.classList && e.target.classList.contains("pick-q")) {
+      e.preventDefault();
+      const first = $$(".pick-item").find(l => !l.hidden);
+      if (first) { const c = first.querySelector("input"); c.checked = !c.checked; c.dispatchEvent(new Event("change", { bubbles: true })); }
+    }
+  }, true);
 
   let toastT;
   function toast(msg) {
@@ -774,7 +867,7 @@ form.stack { display: grid; gap: 12px; }
   // ---------- CSV ----------
   function csv() {
     const rows = [["Partenaire", "OIP", "Type de produit DFP", "Commercial", "Mois de recrutement", "Mois", "MRR (EUR)"]];
-    for (const p of S.partners) for (const k of Object.keys(p.mrr || {}).sort()) if (mrrOf(p, k)) rows.push([p.name, p.oip || "", p.product || "", repName(p.repId), p.recruited || "", k, mrrOf(p, k)]);
+    for (const p of S.partners) for (const k of Object.keys(p.mrr || {}).sort()) if (mrrOf(p, k)) rows.push([p.name, p.oip || "", prods(p).join(", "), repName(p.repId), p.recruited || "", k, mrrOf(p, k)]);
     return "﻿" + rows.map(r => r.map(c => /[";\n]/.test(String(c)) ? `"${String(c).replace(/"/g, '""')}"` : c).join(";")).join("\n");
   }
   async function exportCsv() {
@@ -808,8 +901,10 @@ form.stack { display: grid; gap: 12px; }
 
   // ---------- events ----------
   document.addEventListener("click", async e => {
+    if (e.target.closest("[data-pick-close]")) { closePicker(); return; }
     const t = e.target.closest("button, [data-goto]");
     if (!t) return;
+    if (t.dataset.pick) { openPicker(t); return; }
     if (t.dataset.tab) { ui.tab = t.dataset.tab; savePrefs(); render(); return; }
     if (t.dataset.goto) { ui.tab = t.dataset.goto; savePrefs(); render(); return; }
     if (t.dataset.gran) { ui.gran = t.dataset.gran; ui.period = defaultPeriod(ui.gran); savePrefs(); render(); return; }
@@ -848,12 +943,6 @@ form.stack { display: grid; gap: 12px; }
       const mrr = { ...(p.mrr || {}) };
       if (v === null) delete mrr[mk]; else mrr[mk] = v;
       await guarded(() => api.savePartner({ ...p, mrr, updatedAt: Date.now() }), `${p.name} · ${mLong(mk)} : ${v === null ? "montant effacé" : fmt(v) + " enregistré"}`);
-    }
-    if (t.classList.contains("prod-in")) {
-      const p = S.partners.find(x => x.id === t.dataset.pid);
-      const v = t.value.trim();
-      if (!p || v === (p.product || "")) return;
-      await guarded(() => api.savePartner({ ...p, product: v, updatedAt: Date.now() }), `${p.name} : produit ${v ? "enregistré" : "effacé"}`);
     }
     if (t.classList.contains("rec-in") || t.classList.contains("oip-in")) {
       const p = S.partners.find(x => x.id === t.dataset.pid);
@@ -912,17 +1001,22 @@ form.stack { display: grid; gap: 12px; }
     const f = e.target;
     e.preventDefault();
     if (f.id === "newPartner") {
-      const name = $("#np-name").value.trim(), repId = $("#np-rep").value, rec = $("#np-month").value, oip = $("#np-oip").value.trim(), product = $("#np-prod").value.trim();
+      const name = $("#np-name").value.trim(), repId = $("#np-rep").value, rec = $("#np-month").value, oip = $("#np-oip").value.trim(), products = [...ui.npProducts];
       if (!name || !repId || !rec) return;
       const mrr = {};
-      const ok = await guarded(() => api.savePartner({ id: uid("p"), name, repId, recruited: rec, oip, product, mrr, createdAt: Date.now(), updatedAt: Date.now() }), `${name} ajouté`);
-      if (ok) { ui.entryYear = yOf(rec); render(); const o = $("#np-oip"); if (o) o.value = ""; const pr = $("#np-prod"); if (pr) pr.value = ""; const n = $("#np-name"); if (n) { n.value = ""; n.focus(); } }
+      const ok = await guarded(() => api.savePartner({ id: uid("p"), name, repId, recruited: rec, oip, products, mrr, createdAt: Date.now(), updatedAt: Date.now() }), `${name} ajouté`);
+      if (ok) { ui.entryYear = yOf(rec); ui.npProducts = []; render(); const o = $("#np-oip"); if (o) o.value = "";  const n = $("#np-name"); if (n) { n.value = ""; n.focus(); } }
     }
     if (f.id === "newRep") {
       const name = $("#nr-name").value.trim();
       if (!name) return;
       const order = Math.max(-1, ...S.reps.map(r => r.order ?? 0)) + 1;
       if (await guarded(() => api.saveRep({ id: uid("r"), name, order, active: true }), `${name} ajouté`)) { const n = $("#nr-name"); if (n) { n.value = ""; n.focus(); } }
+    }
+    if (f.id === "prodForm") {
+      const list = [...new Set($("#prodCat").value.split("\n").map(v => v.trim()).filter(Boolean))];
+      if (!list.length) { toast("La liste doit contenir au moins un produit."); return; }
+      await guarded(() => api.saveSettings({ ...S.settings, products: list }), "Liste des produits enregistrée");
     }
     if (f.id === "targetForm") {
       const base = Math.max(0, Math.round(+$("#tgt").value || 0));
