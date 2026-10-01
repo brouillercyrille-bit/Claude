@@ -155,6 +155,8 @@ table.grid tbody tr:hover td.sticky { background: var(--surface-2); }
 .saved { color: var(--good); font-size: 12px; font-weight: 600; }
 
 form.stack { display: grid; gap: 12px; }
+.tgt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+.tgt-grid input { width: 100%; text-align: right; font-variant-numeric: tabular-nums; }
 .empty { padding: 28px 16px; text-align: center; color: var(--fg-2); display: grid; gap: 10px; justify-items: center; }
 .empty strong { color: var(--fg); font-size: 15px; }
 .row-actions { display: flex; gap: 2px; justify-content: flex-end; }
@@ -179,7 +181,7 @@ form.stack { display: grid; gap: 12px; }
       <div class="mark" aria-hidden="true"></div>
       <div>
         <h1>MRR Partenaires</h1>
-        <p>Recrutement partenaires · objectif <span id="hdrTarget">500 €</span> de MRR / commercial / mois</p>
+        <p>Recrutement partenaires · objectif de MRR par commercial ce mois-ci : <span id="hdrTarget">500 €</span></p>
       </div>
     </div>
     <nav class="tabs" role="tablist" aria-label="Sections">
@@ -244,6 +246,7 @@ form.stack { display: grid; gap: 12px; }
     entryQ: "",
     entryRep: prefs.entryRep || "all",
     partnerRep: "all",
+    teamYear: now.getFullYear(),
     partnerQ: ""
   };
   const savePrefs = () => safeLS.set("mrr-ui", { tab: ui.tab, gran: ui.gran, entryRep: ui.entryRep });
@@ -315,6 +318,9 @@ form.stack { display: grid; gap: 12px; }
   const sortedReps = () => [...S.reps].sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name, "fr"));
   const activeReps = () => sortedReps().filter(r => r.active !== false);
   const target = () => +S.settings.monthlyTarget || 0;
+  // objective per salesperson for a given month: month override, else the default
+  const targetFor = k => { const o = (S.settings.targets || {})[k]; return o === undefined || o === null ? target() : +o || 0; };
+  const sumTargets = ks => ks.reduce((t, k) => t + targetFor(k), 0);
   const mrrOf = (p, k) => +((p.mrr || {})[k]) || 0;
 
   function dataBounds() {
@@ -360,13 +366,13 @@ form.stack { display: grid; gap: 12px; }
     const ps = S.partners.filter(p => p.repId === rep.id);
     const mrr = ps.reduce((s, p) => s + months.reduce((t, k) => t + mrrOf(p, k), 0), 0);
     const recruited = ps.filter(p => p.recruited && months.includes(p.recruited)).length;
-    const tgt = rep.active === false ? 0 : target() * elapsed.length;
+    const tgt = rep.active === false ? 0 : sumTargets(elapsed);
     return { rep, mrr, recruited, tgt, ratio: tgt ? mrr / tgt : NaN, partners: ps.filter(p => months.some(k => mrrOf(p, k) > 0)).length };
   }
 
   // ---------- render ----------
   function render() {
-    $("#hdrTarget").textContent = fmt(target());
+    $("#hdrTarget").textContent = fmt(targetFor(CUR));
     $$(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.tab === ui.tab)));
     ["dash", "entry", "partners", "team"].forEach(v => { $("#view-" + v).hidden = v !== ui.tab; });
     renderBanner();
@@ -405,7 +411,7 @@ form.stack { display: grid; gap: 12px; }
     const repIds = new Set(reps.map(r => r.id));
     const total = stats.reduce((s, x) => s + x.mrr, 0);
     const tgt = stats.reduce((s, x) => s + x.tgt, 0);
-    const fullTgt = reps.filter(r => r.active !== false).length * target() * months.length;
+    const fullTgt = reps.filter(r => r.active !== false).length * sumTargets(months);
     const recruited = stats.reduce((s, x) => s + x.recruited, 0);
     const activeP = S.partners.filter(p => repIds.has(p.repId) && months.some(k => mrrOf(p, k) > 0)).length;
     const ratio = tgt ? total / tgt : NaN;
@@ -444,7 +450,7 @@ form.stack { display: grid; gap: 12px; }
       <div class="grid2">
         <div class="card">
           <h2>Performance par commercial</h2>
-          <p class="sub">MRR ${esc(pLabel)} face à l'objectif à date (${fmt(target())} × ${elapsed.length} mois écoulé${elapsed.length > 1 ? "s" : ""})</p>
+          <p class="sub">MRR ${esc(pLabel)} face à l'objectif à date (${fmt(sumTargets(elapsed))} par commercial sur ${elapsed.length} mois écoulé${elapsed.length > 1 ? "s" : ""})</p>
           ${repBars(stats)}
           <div class="legend"><span><i style="background:var(--teal)"></i>MRR réalisé</span><span><i class="tick"></i>Objectif à date</span></div>
         </div>
@@ -452,7 +458,7 @@ form.stack { display: grid; gap: 12px; }
           <h2>Évolution mensuelle</h2>
           <p class="sub">${ui.gran === "all" ? "Tous les mois" : "Année " + yOf(months[0])} · MRR de ${ui.dashRep === "all" ? "l'équipe" : esc(repName(ui.dashRep))}, période sélectionnée en couleur</p>
           <div class="chart-wrap" id="monthChart"></div>
-          <div class="legend"><span><i style="background:var(--teal)"></i>MRR du mois</span><span><i class="line"></i>Objectif mensuel (${fmt(target() * reps.filter(r => r.active !== false).length)})</span></div>
+          <div class="legend"><span><i style="background:var(--teal)"></i>MRR du mois</span><span><i class="line"></i>Objectif mensuel ${ui.dashRep === "all" ? "de l'équipe" : "du commercial"}</span></div>
         </div>
       </div>
 
@@ -504,9 +510,10 @@ form.stack { display: grid; gap: 12px; }
     const ctx = contextMonths(months);
     const ids = new Set(reps.map(r => r.id));
     const vals = ctx.map(k => S.partners.filter(p => ids.has(p.repId)).reduce((s, p) => s + mrrOf(p, k), 0));
-    const tline = target() * reps.filter(r => r.active !== false).length;
+    const nAct = reps.filter(r => r.active !== false).length;
+    const tl = ctx.map(k => targetFor(k) * nAct);
     const W = 620, H = 260, L = 52, R = 8, T = 14, B = 28;
-    const top = niceMax(Math.max(tline, ...vals, 1));
+    const top = niceMax(Math.max(...tl, ...vals, 1));
     const ticks = 4;
     const y = v => T + (H - T - B) * (1 - v / top);
     const bw = (W - L - R) / ctx.length;
@@ -525,10 +532,11 @@ form.stack { display: grid; gap: 12px; }
       const x0 = x + 3, y0 = y(vals[i]);
       if (h > 0) g += `<path d="M${x0},${y(0)} V${y0 + r} Q${x0},${y0} ${x0 + r},${y0} H${x0 + w - r} Q${x0 + w},${y0} ${x0 + w},${y0 + r} V${y(0)} Z" fill="var(--teal)" opacity="${sel ? 1 : 0.32}"/>`;
       if (i % labelEvery === 0) g += `<text x="${x + bw / 2}" y="${H - 8}" text-anchor="middle" ${sel ? 'style="fill:var(--fg);font-weight:600"' : ""}>${ctx.length > 12 ? mLabel(k) : MONTHS[mOf(k) - 1]}</text>`;
-      const ratio = tline ? vals[i] / tline : NaN;
-      g += `<rect x="${x}" y="${T}" width="${bw}" height="${H - T - B}" fill="transparent" data-tip="<b>${esc(mLong(k))}</b><br>MRR : ${fmt(vals[i])}${tline ? `<br>Objectif : ${fmt(tline)} (${fut ? "à venir" : pct(ratio)})` : ""}"/>`;
+      const tline = tl[i], ratio = tline ? vals[i] / tline : NaN;
+      g += `<rect x="${x}" y="${T}" width="${bw}" height="${H - T - B}" fill="transparent" data-tip="<b>${esc(mLong(k))}</b><br>MRR : ${fmt(vals[i])}<br>Objectif : ${fmt(tline)}${tline ? ` (${fut ? "à venir" : pct(ratio)})` : ""}"/>`;
     });
-    if (tline) g += `<line x1="${L}" x2="${W - R}" y1="${y(tline)}" y2="${y(tline)}" stroke="var(--orange)" stroke-width="2" stroke-dasharray="6 4"/>`;
+    // stepped objective line: one level per month
+    if (nAct) g += `<path d="${tl.map((t, i) => `${i ? "L" : "M"}${L + i * bw},${y(t)} H${L + (i + 1) * bw}`).join(" ")}" fill="none" stroke="var(--orange)" stroke-width="2" stroke-dasharray="6 4"/>`;
     box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="MRR par mois">${g}</svg>`;
   }
   function niceMax(v) {
@@ -544,8 +552,7 @@ form.stack { display: grid; gap: 12px; }
       const ps = S.partners.filter(p => p.repId === r.id);
       const vals = ctx.map(k => ps.reduce((s, p) => s + mrrOf(p, k), 0));
       const tot = vals.reduce((a, b) => a + b, 0);
-      const elapsedN = ctx.filter(k => k <= CUR).length;
-      const t = r.active === false ? 0 : target() * elapsedN;
+      const t = r.active === false ? 0 : sumTargets(ctx.filter(k => k <= CUR));
       return `<tr><td style="white-space:nowrap">${esc(r.name)}</td>${vals.map((v, i) => `<td class="n ${v ? "" : "zero"} ${sel.has(ctx[i]) ? "cur" : ""}">${ctx[i] > CUR ? "" : v ? fmt(v) : "–"}</td>`).join("")}<td class="n"><b>${fmt(tot)}</b></td><td class="n">${chip(t ? tot / t : NaN)}</td></tr>`;
     }).join("");
     const colTot = ctx.map(k => S.partners.filter(p => reps.some(r => r.id === p.repId)).reduce((s, p) => s + mrrOf(p, k), 0));
@@ -687,14 +694,25 @@ form.stack { display: grid; gap: 12px; }
         ${ro ? "" : `<form class="filters" id="newRep" style="margin-top:14px"><label class="field" style="flex:1"><span>Nouveau commercial</span><input type="text" id="nr-name" maxlength="60" required placeholder="Prénom Nom"></label><button class="btn primary" type="submit">Ajouter</button></form>`}
       </div>
       <div class="card">
-        <h2>Objectif</h2>
-        <p class="sub">MRR que chaque commercial doit générer chaque mois avec ses nouveaux partenaires. L'objectif d'une période = objectif mensuel × nombre de mois × commerciaux actifs.</p>
-        <form class="filters" id="targetForm"><label class="field"><span>Objectif mensuel par commercial (€)</span><input type="number" id="tgt" min="0" step="50" value="${target()}" ${ro ? "disabled" : ""}></label>${ro ? "" : `<button class="btn primary" type="submit">Enregistrer</button>`}</form>
-        <div class="kpis" style="margin-top:18px">
-          <div class="kpi" style="box-shadow:none;background:var(--surface-2)"><span class="label">Équipe / mois</span><span class="v">${fmt(target() * reps.filter(r => r.active !== false).length)}</span></div>
-          <div class="kpi" style="box-shadow:none;background:var(--surface-2)"><span class="label">Équipe / trimestre</span><span class="v">${fmt(target() * 3 * reps.filter(r => r.active !== false).length)}</span></div>
-          <div class="kpi" style="box-shadow:none;background:var(--surface-2)"><span class="label">Équipe / an</span><span class="v">${fmt(target() * 12 * reps.filter(r => r.active !== false).length)}</span></div>
-        </div>
+        <h2>Objectifs mensuels</h2>
+        <p class="sub">MRR que chaque commercial doit générer avec ses nouveaux partenaires, mois par mois. L'objectif d'une période = somme des objectifs des mois × commerciaux actifs.</p>
+        ${(() => {
+          const ty = ui.teamYear, ms = range(ym(ty, 1), ym(ty, 12));
+          const nAct = reps.filter(r => r.active !== false).length;
+          const qs = [1, 2, 3, 4].map(q => sumTargets(ms.slice(q * 3 - 3, q * 3)));
+          return `<form id="targetForm" style="display:grid;gap:14px">
+          <div class="filters">
+            <label class="field"><span>Année</span><select id="teamYear">${[now.getFullYear() + 1, now.getFullYear(), now.getFullYear() - 1].map(yy => `<option value="${yy}" ${yy === ty ? "selected" : ""}>${yy}</option>`).join("")}</select></label>
+            <label class="field"><span>Objectif par défaut (€ / mois)</span><input type="number" id="tgt" min="0" step="50" value="${target()}" ${ro ? "disabled" : ""}></label>
+          </div>
+          <div class="tgt-grid">${ms.map(k => `<label class="field"><span>${MONTHS_L[mOf(k) - 1]}</span><input type="number" class="tgt-m" data-k="${k}" min="0" step="10" value="${targetFor(k)}" ${ro ? "disabled" : ""}></label>`).join("")}</div>
+          ${ro ? "" : `<div><button class="btn primary" type="submit">Enregistrer les objectifs</button></div>`}
+          </form>
+          <div class="kpis" style="margin-top:18px">
+            ${qs.map((v, i) => `<div class="kpi" style="box-shadow:none;background:var(--surface-2)"><span class="label">T${i + 1} ${ty} / commercial</span><span class="v" style="font-size:22px">${fmt(v)}</span><span class="d">Équipe : ${fmt(v * nAct)}</span></div>`).join("")}
+          </div>
+          <p class="sub" style="margin:12px 0 0">Année ${ty} : ${fmt(sumTargets(ms))} par commercial, ${fmt(sumTargets(ms) * nAct)} pour l'équipe (${nAct} actif${nAct > 1 ? "s" : ""}).</p>`;
+        })()}
       </div>
     </div>`;
   }
@@ -802,6 +820,7 @@ form.stack { display: grid; gap: 12px; }
     if (t.id === "entryYear") { ui.entryYear = +t.value; render(); }
     if (t.id === "entryRep") { ui.entryRep = t.value; savePrefs(); render(); }
     if (t.id === "pRep") { ui.partnerRep = t.value; render(); }
+    if (t.id === "teamYear") { ui.teamYear = +t.value; render(); }
     if (t.classList.contains("mrr-in")) {
       const p = S.partners.find(x => x.id === t.dataset.pid);
       if (!p) return;
@@ -868,8 +887,13 @@ form.stack { display: grid; gap: 12px; }
       if (await guarded(() => api.saveRep({ id: uid("r"), name, order, active: true }), `${name} ajouté`)) { const n = $("#nr-name"); if (n) { n.value = ""; n.focus(); } }
     }
     if (f.id === "targetForm") {
-      const v = Math.max(0, Math.round(+$("#tgt").value || 0));
-      await guarded(() => api.saveSettings({ ...S.settings, monthlyTarget: v }), "Objectif enregistré");
+      const base = Math.max(0, Math.round(+$("#tgt").value || 0));
+      const targets = { ...(S.settings.targets || {}) };
+      for (const inp of $$(".tgt-m")) {
+        const v = inp.value.trim() === "" ? base : Math.max(0, Math.round(+inp.value || 0));
+        if (v === base) delete targets[inp.dataset.k]; else targets[inp.dataset.k] = v;
+      }
+      await guarded(() => api.saveSettings({ ...S.settings, monthlyTarget: base, targets }), "Objectifs enregistrés");
     }
   });
 
