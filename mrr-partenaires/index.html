@@ -143,11 +143,17 @@ table.t tfoot td { font-weight: 700; border-bottom: 0; border-top: 2px solid var
 table.t tr.hl td { background: var(--teal-soft); }
 table.t td.zero { color: var(--muted); }
 table.t th.cur, table.t td.cur { background: var(--teal-soft); }
-.mrr-in { width: 110px; text-align: right; font-variant-numeric: tabular-nums; }
+.mrr-in { width: 76px; min-height: 32px !important; padding: 5px 6px !important; text-align: right; font-variant-numeric: tabular-nums; }
+.mrr-in::-webkit-inner-spin-button, .mrr-in::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.mrr-in { -moz-appearance: textfield; }
+table.grid td, table.grid th { padding: 5px 4px; }
+table.grid td.sticky, table.grid th.sticky { position: sticky; left: 0; background: var(--surface); z-index: 1; min-width: 170px; max-width: 240px; padding-left: 8px; box-shadow: 1px 0 0 var(--line); }
+table.grid td.sticky small { display: block; color: var(--muted); font-size: 11px; }
+table.grid td.off { background: repeating-linear-gradient(135deg, transparent 0 5px, var(--surface-2) 5px 7px); }
+table.grid tbody tr:hover td { background-color: var(--surface-2); }
+table.grid tbody tr:hover td.sticky { background: var(--surface-2); }
 .saved { color: var(--good); font-size: 12px; font-weight: 600; }
 
-.entry-layout { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 20px; align-items: start; }
-@media (max-width: 900px) { .entry-layout { grid-template-columns: minmax(0, 1fr); } }
 form.stack { display: grid; gap: 12px; }
 .empty { padding: 28px 16px; text-align: center; color: var(--fg-2); display: grid; gap: 10px; justify-items: center; }
 .empty strong { color: var(--fg); font-size: 15px; }
@@ -178,7 +184,7 @@ form.stack { display: grid; gap: 12px; }
     </div>
     <nav class="tabs" role="tablist" aria-label="Sections">
       <button class="tab" role="tab" id="tab-dash" data-tab="dash" aria-selected="true">Tableau de bord</button>
-      <button class="tab" role="tab" id="tab-entry" data-tab="entry" aria-selected="false">Saisie MRR</button>
+      <button class="tab" role="tab" id="tab-entry" data-tab="entry" aria-selected="false">Saisie MRR mensuel</button>
       <button class="tab" role="tab" id="tab-partners" data-tab="partners" aria-selected="false">Partenaires</button>
       <button class="tab" role="tab" id="tab-team" data-tab="team" aria-selected="false">Équipe &amp; objectifs</button>
     </nav>
@@ -234,7 +240,8 @@ form.stack { display: grid; gap: 12px; }
     gran: prefs.gran || "quarter",
     period: null,
     dashRep: "all",
-    entryMonth: CUR,
+    entryYear: now.getFullYear(),
+    entryQ: "",
     entryRep: prefs.entryRep || "all",
     partnerRep: "all",
     partnerQ: ""
@@ -562,52 +569,71 @@ form.stack { display: grid; gap: 12px; }
     if (!S.reps.length) { el.innerHTML = emptyTeam(); return; }
     // keep what the person is typing across live refreshes
     const f = document.activeElement;
-    const keep = f && f.classList && f.classList.contains("mrr-in") ? { pid: f.dataset.pid, val: f.value, s: f.selectionStart } : null;
+    const keep = f && f.classList && f.classList.contains("mrr-in") ? { pid: f.dataset.pid, k: f.dataset.k, val: f.value, s: f.selectionStart } : null;
 
-    const k = ui.entryMonth;
+    const y = ui.entryYear;
+    const months = range(ym(y, 1), ym(y, 12));
+    const y0 = Math.min(yOf(dataBounds().min), now.getFullYear() - 1);
+    const years = []; for (let yy = now.getFullYear(); yy >= y0; yy--) years.push(yy);
+    const q = ui.entryQ.trim().toLowerCase();
     const ps = S.partners
       .filter(p => ui.entryRep === "all" || p.repId === ui.entryRep)
-      .filter(p => !p.recruited || p.recruited <= k)
-      .sort((a, b) => repName(a.repId).localeCompare(repName(b.repId), "fr") || a.name.localeCompare(b.name, "fr"));
-    const monthTot = ps.reduce((s, p) => s + mrrOf(p, k), 0);
+      .filter(p => !p.recruited || yOf(p.recruited) <= y)
+      .filter(p => !q || p.name.toLowerCase().includes(q))
+      .sort((a, b) => (a.recruited || "").localeCompare(b.recruited || "") || a.name.localeCompare(b.name, "fr"));
     const ro = !S.canWrite;
+    const colTot = months.map(k => ps.reduce((t, p) => t + mrrOf(p, k), 0));
+    const yearTot = colTot.reduce((a, b) => a + b, 0);
+    const recruitedThisYear = ps.filter(p => p.recruited && yOf(p.recruited) === y).length;
 
-    el.innerHTML = `<div class="entry-layout">
+    el.innerHTML = `<div style="display:grid;gap:20px">
       <div class="card">
         <h2>Nouveau partenaire</h2>
-        <p class="sub">Enregistrez un partenaire dès sa signature.</p>
-        <form class="stack" id="newPartner">
-          <label class="field"><span>Nom du partenaire</span><input type="text" id="np-name" required maxlength="120" placeholder="Ex. Telecom Services Lyon" ${ro ? "disabled" : ""}></label>
-          <label class="field"><span>Commercial</span><select id="np-rep" required ${ro ? "disabled" : ""}>${activeReps().map(r => `<option value="${r.id}" ${ui.entryRep === r.id ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select></label>
-          <label class="field"><span>Mois de recrutement</span><input type="month" id="np-month" value="${CUR}" max="${CUR}" required ${ro ? "disabled" : ""}></label>
-          <label class="field"><span>MRR du premier mois (€, facultatif)</span><input type="number" id="np-mrr" min="0" step="1" inputmode="numeric" placeholder="0" ${ro ? "disabled" : ""}></label>
+        <p class="sub">Enregistrez le partenaire dès sa signature. Il apparaît ensuite dans la grille ci-dessous, où vous saisissez son MRR chaque mois.</p>
+        <form class="filters" id="newPartner">
+          <label class="field" style="flex:2 1 220px"><span>Nom du partenaire</span><input type="text" id="np-name" required maxlength="120" placeholder="Ex. Telecom Services Lyon" ${ro ? "disabled" : ""}></label>
+          <label class="field" style="flex:1 1 160px"><span>Commercial</span><select id="np-rep" required ${ro ? "disabled" : ""}>${activeReps().map(r => `<option value="${r.id}" ${ui.entryRep === r.id ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select></label>
+          <label class="field" style="flex:1 1 150px"><span>Mois de recrutement</span><input type="month" id="np-month" value="${CUR}" max="${CUR}" required ${ro ? "disabled" : ""}></label>
           <button class="btn primary" type="submit" ${ro ? "disabled" : ""}>Ajouter le partenaire</button>
         </form>
       </div>
       <div class="card">
         <div class="toolbar">
-          <div><h2>MRR de ${esc(mLong(k))}</h2><p class="sub" style="margin:0">Saisissez le MRR généré dans le mois par chaque partenaire. Chaque montant est enregistré dès que vous quittez la case.</p></div>
+          <div><h2>MRR mensuel par partenaire · ${y}</h2>
+          <p class="sub" style="margin:0">Une ligne par partenaire recruté, une colonne par mois : saisissez le nouveau MRR généré chaque mois. Les cases avant le mois de recrutement sont grisées. Entrée passe à la ligne suivante ; chaque montant est enregistré dès que vous quittez la case.</p></div>
         </div>
         <div class="filters" style="margin-bottom:14px">
-          <label class="field"><span>Mois</span><input type="month" id="entryMonth" value="${k}" max="${CUR}"></label>
+          <label class="field"><span>Année</span><select id="entryYear">${years.map(yy => `<option value="${yy}" ${yy === y ? "selected" : ""}>${yy}</option>`).join("")}</select></label>
           <label class="field"><span>Commercial</span><select id="entryRep"><option value="all">Tous</option>${sortedReps().map(r => `<option value="${r.id}" ${ui.entryRep === r.id ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select></label>
-          <div class="field"><span>Total du mois</span><b class="num" style="font-size:18px;line-height:36px">${fmt(monthTot)}</b></div>
+          <label class="field"><span>Rechercher</span><input type="text" id="entryQ" value="${esc(ui.entryQ)}" placeholder="Nom du partenaire"></label>
+          <div class="field"><span>Total ${y}</span><b class="num" style="font-size:18px;line-height:36px">${fmt(yearTot)}</b></div>
+          <div class="field"><span>Recrutés en ${y}</span><b class="num" style="font-size:18px;line-height:36px">${recruitedThisYear}</b></div>
         </div>
-        ${ps.length ? `<div class="tbl-wrap" id="entryTable"><table class="t">
-          <thead><tr><th>Partenaire</th><th>Commercial</th><th>Recruté</th><th class="n">MRR ${esc(mLabel(k))}</th><th class="n">Cumul</th></tr></thead>
+        ${ps.length ? `<div class="tbl-wrap grid-wrap" id="entryTable"><table class="t grid">
+          <thead><tr><th class="sticky">Partenaire</th><th>Recruté</th>${months.map(k => `<th class="n ${k === CUR ? "cur" : ""}">${MONTHS[mOf(k) - 1]}</th>`).join("")}<th class="n">Total ${y}</th></tr></thead>
           <tbody>${ps.map(p => {
-            const v = (p.mrr || {})[k];
-            const cum = Object.values(p.mrr || {}).reduce((s, x) => s + (+x || 0), 0);
-            return `<tr><td><b>${esc(p.name)}</b></td><td class="muted">${esc(repName(p.repId))}</td><td class="muted num">${p.recruited ? mLabel(p.recruited) : "—"}</td>
-              <td class="n"><input class="mrr-in" type="number" min="0" step="1" inputmode="numeric" aria-label="MRR ${esc(p.name)}" data-pid="${p.id}" value="${v ?? ""}" placeholder="0" ${ro ? "disabled" : ""}></td>
-              <td class="n">${fmt(cum)}</td></tr>`;
-          }).join("")}</tbody></table></div>`
-          : `<div class="empty"><strong>Aucun partenaire pour ce mois</strong><span>Ajoutez un partenaire avec le formulaire, ou choisissez un autre mois ou commercial.</span></div>`}
+            const tot = months.reduce((t, k) => t + mrrOf(p, k), 0);
+            return `<tr><td class="sticky"><b>${esc(p.name)}</b><small>${esc(repName(p.repId))}</small></td>
+              <td class="muted num" style="white-space:nowrap">${p.recruited ? mLabel(p.recruited) : "—"}</td>
+              ${months.map(k => {
+                const closed = (p.recruited && k < p.recruited) || k > CUR;
+                if (closed) return `<td class="off ${k === CUR ? "cur" : ""}" aria-hidden="true"></td>`;
+                const v = (p.mrr || {})[k];
+                return `<td class="n ${k === CUR ? "cur" : ""}"><input class="mrr-in" type="number" min="0" step="1" inputmode="numeric" aria-label="MRR ${esc(p.name)} ${esc(mLong(k))}" data-pid="${p.id}" data-k="${k}" value="${v ?? ""}" ${ro ? "disabled" : ""}></td>`;
+              }).join("")}
+              <td class="n"><b>${fmt(tot)}</b></td></tr>`;
+          }).join("")}</tbody>
+          <tfoot><tr><td class="sticky">Total</td><td></td>${colTot.map((v, i) => `<td class="n ${months[i] === CUR ? "cur" : ""}">${months[i] > CUR ? "" : fmt(v)}</td>`).join("")}<td class="n">${fmt(yearTot)}</td></tr></tfoot>
+        </table></div>`
+          : `<div class="empty"><strong>Aucun partenaire à afficher</strong><span>${S.partners.length ? "Changez l'année, le commercial ou la recherche." : "Ajoutez votre premier partenaire avec le formulaire ci-dessus."}</span></div>`}
       </div>
     </div>`;
     if (keep) {
-      const inp = $(`.mrr-in[data-pid="${keep.pid}"]`);
+      const inp = $(`.mrr-in[data-pid="${keep.pid}"][data-k="${keep.k}"]`);
       if (inp) { inp.value = keep.val; inp.focus(); try { inp.setSelectionRange(keep.s, keep.s); } catch {} }
+    } else if (ui.focusNext) {
+      const inp = $(`.mrr-in[data-pid="${ui.focusNext.pid}"][data-k="${ui.focusNext.k}"]`);
+      if (inp) { inp.focus(); inp.select(); }
     }
   }
 
@@ -773,7 +799,7 @@ form.stack { display: grid; gap: 12px; }
     const t = e.target;
     if (t.id === "periodSel") { ui.period = t.value; render(); }
     if (t.id === "dashRep") { ui.dashRep = t.value; render(); }
-    if (t.id === "entryMonth") { if (t.value) { ui.entryMonth = t.value > CUR ? CUR : t.value; render(); } }
+    if (t.id === "entryYear") { ui.entryYear = +t.value; render(); }
     if (t.id === "entryRep") { ui.entryRep = t.value; savePrefs(); render(); }
     if (t.id === "pRep") { ui.partnerRep = t.value; render(); }
     if (t.classList.contains("mrr-in")) {
@@ -782,11 +808,12 @@ form.stack { display: grid; gap: 12px; }
       const raw = t.value.trim();
       const v = raw === "" ? null : Math.max(0, Math.round(+raw));
       if (raw !== "" && !isFinite(v)) return;
-      const cur = (p.mrr || {})[ui.entryMonth];
+      const mk = t.dataset.k;
+      const cur = (p.mrr || {})[mk];
       if ((cur ?? null) === v) return;
       const mrr = { ...(p.mrr || {}) };
-      if (v === null) delete mrr[ui.entryMonth]; else mrr[ui.entryMonth] = v;
-      await guarded(() => api.savePartner({ ...p, mrr, updatedAt: Date.now() }), `${p.name} : ${v === null ? "montant effacé" : fmt(v) + " enregistré"}`);
+      if (v === null) delete mrr[mk]; else mrr[mk] = v;
+      await guarded(() => api.savePartner({ ...p, mrr, updatedAt: Date.now() }), `${p.name} · ${mLong(mk)} : ${v === null ? "montant effacé" : fmt(v) + " enregistré"}`);
     }
     if (t.classList.contains("rep-name-in")) {
       const r = S.reps.find(x => x.id === t.dataset.rid);
@@ -796,7 +823,26 @@ form.stack { display: grid; gap: 12px; }
     }
   });
 
+  document.addEventListener("keydown", e => {
+    const t = e.target;
+    if (e.key !== "Enter" || !t.classList || !t.classList.contains("mrr-in")) return;
+    e.preventDefault();
+    const col = $$(`.mrr-in[data-k="${t.dataset.k}"]`);
+    const next = col[col.indexOf(t) + (e.shiftKey ? -1 : 1)];
+    if (next) {
+      ui.focusNext = { pid: next.dataset.pid, k: next.dataset.k };
+      next.focus(); next.select();
+      setTimeout(() => { ui.focusNext = null; }, 0);
+    } else t.blur();
+  });
+
   document.addEventListener("input", e => {
+    if (e.target.id === "entryQ") {
+      ui.entryQ = e.target.value;
+      const pos = e.target.selectionStart;
+      renderEntry();
+      const n = $("#entryQ"); n.focus(); try { n.setSelectionRange(pos, pos); } catch {}
+    }
     if (e.target.id === "pq") {
       ui.partnerQ = e.target.value;
       const pos = e.target.selectionStart;
@@ -809,11 +855,11 @@ form.stack { display: grid; gap: 12px; }
     const f = e.target;
     e.preventDefault();
     if (f.id === "newPartner") {
-      const name = $("#np-name").value.trim(), repId = $("#np-rep").value, rec = $("#np-month").value, m = $("#np-mrr").value.trim();
+      const name = $("#np-name").value.trim(), repId = $("#np-rep").value, rec = $("#np-month").value;
       if (!name || !repId || !rec) return;
-      const mrr = {}; if (m !== "" && +m >= 0) mrr[rec] = Math.round(+m);
+      const mrr = {};
       const ok = await guarded(() => api.savePartner({ id: uid("p"), name, repId, recruited: rec, mrr, createdAt: Date.now(), updatedAt: Date.now() }), `${name} ajouté`);
-      if (ok) { ui.entryMonth = rec; const n = $("#np-name"); if (n) { n.value = ""; n.focus(); } const mm = $("#np-mrr"); if (mm) mm.value = ""; }
+      if (ok) { ui.entryYear = yOf(rec); render(); const n = $("#np-name"); if (n) { n.value = ""; n.focus(); } }
     }
     if (f.id === "newRep") {
       const name = $("#nr-name").value.trim();
