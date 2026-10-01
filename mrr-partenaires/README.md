@@ -7,4 +7,6 @@ Tableau de bord RevOps pour suivre le MRR généré par les nouveaux partenaires
 - **Partenaires** : liste, recherche, modification et suppression (aussi depuis la grille, bouton ✕ avec confirmation). Les doublons de nom sont signalés.
 - **Équipe & objectifs** : liste des types de produit DFP (modifiable), commerciaux (ajout, renommage, activation) et objectif mensuel par commercial, réglable mois par mois (par défaut 500 € ; 2026 : janvier 0 €, février 150 €, mars 300 €, août 50 €).
 
+Tous les montants sont saisis, stockés et affichés au centime (deux décimales, sans arrondi à l'euro).
+
 Publiée comme artifact claude.ai, la page stocke les données dans une base partagée. Ouverte en local (`index.html`), elle les garde dans le navigateur (localStorage) et propose un jeu d'exemple.

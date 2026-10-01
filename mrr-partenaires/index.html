@@ -148,7 +148,7 @@ table.t tfoot td { font-weight: 700; border-bottom: 0; border-top: 2px solid var
 table.t tr.hl td { background: var(--teal-soft); }
 table.t td.zero { color: var(--muted); }
 table.t th.cur, table.t td.cur { background: var(--teal-soft); }
-.mrr-in { width: 76px; min-height: 32px !important; padding: 5px 6px !important; text-align: right; font-variant-numeric: tabular-nums; }
+.mrr-in { width: 92px; min-height: 32px !important; padding: 5px 6px !important; text-align: right; font-variant-numeric: tabular-nums; }
 .mrr-in::-webkit-inner-spin-button, .mrr-in::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .mrr-in { -moz-appearance: textfield; }
 .mrr-in.pre { border-color: var(--warn); background: var(--warn-bg); }
@@ -237,9 +237,12 @@ form.stack { display: grid; gap: 12px; }
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const eur = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
-  const fmt = v => eur.format(Math.round(v || 0));
-  const fmtK = v => v >= 10000 ? (Math.round(v / 100) / 10).toString().replace(".", ",") + " k€" : fmt(v);
+  const eur = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmt = v => eur.format(v || 0);
+  // amounts are kept to the cent; accepts "1234,56" as well as "1234.56"
+  const cents = v => Math.round(v * 100) / 100;
+  const parseAmount = raw => { const n = +String(raw).replace(/\s/g, "").replace(",", "."); return isFinite(n) ? Math.max(0, cents(n)) : NaN; };
+  const fmtK = v => v >= 10000 ? (Math.round(v / 100) / 10).toString().replace(".", ",") + " k€" : Math.round(v).toLocaleString("fr-FR") + " €";
   const pct = v => isFinite(v) ? Math.round(v * 100) + " %" : "—";
   const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
@@ -672,7 +675,7 @@ form.stack { display: grid; gap: 12px; }
                 const closed = (before && !mrrOf(p, k)) || k > CUR;
                 if (closed) return `<td class="off ${k === CUR ? "cur" : ""}" aria-hidden="true"></td>`;
                 const v = (p.mrr || {})[k];
-                return `<td class="n ${k === CUR ? "cur" : ""}"><input class="mrr-in${before ? " pre" : ""}" ${before ? 'title="Montant saisi avant le mois de recrutement : vérifiez-le ou effacez-le"' : ""} type="number" min="0" step="1" inputmode="numeric" aria-label="MRR ${esc(p.name)} ${esc(mLong(k))}" data-pid="${p.id}" data-k="${k}" value="${v ?? ""}" ${ro ? "disabled" : ""}></td>`;
+                return `<td class="n ${k === CUR ? "cur" : ""}"><input class="mrr-in${before ? " pre" : ""}" step="0.01" ${before ? 'title="Montant saisi avant le mois de recrutement : vérifiez-le ou effacez-le"' : ""} type="number" min="0" inputmode="numeric" aria-label="MRR ${esc(p.name)} ${esc(mLong(k))}" data-pid="${p.id}" data-k="${k}" value="${v ?? ""}" ${ro ? "disabled" : ""}></td>`;
               }).join("")}
               <td class="n"><b>${fmt(tot)}</b></td></tr>`;
           }).join("")}</tbody>
@@ -750,9 +753,9 @@ form.stack { display: grid; gap: 12px; }
           return `<form id="targetForm" style="display:grid;gap:14px">
           <div class="filters">
             <label class="field"><span>Année</span><select id="teamYear">${[now.getFullYear() + 1, now.getFullYear(), now.getFullYear() - 1].map(yy => `<option value="${yy}" ${yy === ty ? "selected" : ""}>${yy}</option>`).join("")}</select></label>
-            <label class="field"><span>Objectif par défaut (€ / mois)</span><input type="number" id="tgt" min="0" step="50" value="${target()}" ${ro ? "disabled" : ""}></label>
+            <label class="field"><span>Objectif par défaut (€ / mois)</span><input type="number" id="tgt" min="0" step="0.01" value="${target()}" ${ro ? "disabled" : ""}></label>
           </div>
-          <div class="tgt-grid">${ms.map(k => `<label class="field"><span>${MONTHS_L[mOf(k) - 1]}</span><input type="number" class="tgt-m" data-k="${k}" min="0" step="10" value="${targetFor(k)}" ${ro ? "disabled" : ""}></label>`).join("")}</div>
+          <div class="tgt-grid">${ms.map(k => `<label class="field"><span>${MONTHS_L[mOf(k) - 1]}</span><input type="number" class="tgt-m" data-k="${k}" min="0" step="0.01" value="${targetFor(k)}" ${ro ? "disabled" : ""}></label>`).join("")}</div>
           ${ro ? "" : `<div><button class="btn primary" type="submit">Enregistrer les objectifs</button></div>`}
           </form>
           <div class="kpis" style="margin-top:18px">
@@ -881,7 +884,7 @@ form.stack { display: grid; gap: 12px; }
   // ---------- CSV ----------
   function csv() {
     const rows = [["Partenaire", "OIP", "Type de produit DFP", "Commercial", "Mois de recrutement", "Mois", "MRR (EUR)"]];
-    for (const p of S.partners) for (const k of Object.keys(p.mrr || {}).sort()) if (mrrOf(p, k)) rows.push([p.name, p.oip || "", prods(p).join(", "), repName(p.repId), p.recruited || "", k, mrrOf(p, k)]);
+    for (const p of S.partners) for (const k of Object.keys(p.mrr || {}).sort()) if (mrrOf(p, k)) rows.push([p.name, p.oip || "", prods(p).join(", "), repName(p.repId), p.recruited || "", k, mrrOf(p, k).toFixed(2).replace(".", ",")]);
     return "﻿" + rows.map(r => r.map(c => /[";\n]/.test(String(c)) ? `"${String(c).replace(/"/g, '""')}"` : c).join(";")).join("\n");
   }
   async function exportCsv() {
@@ -961,7 +964,7 @@ form.stack { display: grid; gap: 12px; }
       const p = S.partners.find(x => x.id === t.dataset.pid);
       if (!p) return;
       const raw = t.value.trim();
-      const v = raw === "" ? null : Math.max(0, Math.round(+raw));
+      const v = raw === "" ? null : parseAmount(raw);
       if (raw !== "" && !isFinite(v)) return;
       const mk = t.dataset.k;
       const cur = (p.mrr || {})[mk];
@@ -1045,10 +1048,10 @@ form.stack { display: grid; gap: 12px; }
       await guarded(() => api.saveSettings({ ...S.settings, products: list }), "Liste des produits enregistrée");
     }
     if (f.id === "targetForm") {
-      const base = Math.max(0, Math.round(+$("#tgt").value || 0));
+      const base = parseAmount($("#tgt").value || 0) || 0;
       const targets = { ...(S.settings.targets || {}) };
       for (const inp of $$(".tgt-m")) {
-        const v = inp.value.trim() === "" ? base : Math.max(0, Math.round(+inp.value || 0));
+        const v = inp.value.trim() === "" ? base : (parseAmount(inp.value) || 0);
         if (v === base) delete targets[inp.dataset.k]; else targets[inp.dataset.k] = v;
       }
       await guarded(() => api.saveSettings({ ...S.settings, monthlyTarget: base, targets }), "Objectifs enregistrés");
