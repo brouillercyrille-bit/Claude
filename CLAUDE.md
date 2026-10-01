@@ -3,6 +3,7 @@
 RevOps Dstny. Ce dépôt contient les outils de suivi commercial :
 - `mrr-partenaires/` : tableau de bord MRR des nouveaux partenaires.
 - `challenge-ia/` : suivi hebdomadaire du challenge Dstny Digital Assistant (IA), voir son README.
+- `point-equipe/` : slide unique du lundi pour l'équipe (partenaires recrutés à date, projets en cours, clean data), voir son README.
 
 # Challenge IA : procédure à chaque nouvel export HubSpot
 
@@ -20,3 +21,7 @@ Règles de présentation :
 - Il n'existe pas de champ « partenaires qualifiés » : ne pas l'utiliser.
 - Toujours inclure une slide de vue d'ensemble sans nom de commercial.
 - Français, chiffres sourcés des exports, jamais de valeur inventée.
+
+# Point équipe : slide unique du lundi
+
+Chaque lundi matin, avec les données reçues, mettre à jour l'unique slide de https://claude.ai/artifact/G2DwaW3iV9KUgyU43GaZx8 (même lien, republier) : partenaires recrutés à date, projets en cours, clean data, chacun avec l'écart vs le lundi précédent. Aucun nom de commercial sur cette slide. Archiver les données de la semaine dans `point-equipe/semaines/<AAAA-Snn>/` et committer.
