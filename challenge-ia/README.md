@@ -15,7 +15,7 @@ challenge-ia/
       donnees-normalisees.csv    # export nettoyé, colonnes harmonisées
       graphiques/                # PNG des graphiques de la semaine
       analyse.md                 # analyse et messages clés de la semaine
-      reunion-commerciale-<date>.pptx  # slides de la réunion
+      slides/                    # copie des slides (deck en ligne, lien dans analyse.md)
 ```
 
 Pour retrouver une semaine passée : ouvrir `semaines/<année>-S<numéro>/`. Les évolutions d'une semaine sur l'autre sont calculées à partir de `historique.csv`.
