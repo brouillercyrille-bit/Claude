@@ -29,4 +29,4 @@ python3 challenge-ia/scripts/suivi.py ingest 2026-S41 <export_interet> <export_o
 python3 challenge-ia/scripts/suivi.py compare 2026-S40 2026-S41
 ```
 
-`evolution.md` donne les écarts de chaque indicateur, les partenaires qui changent de statut d'intérêt, les nouveaux projets clients finaux, ceux qui sortent du rapport, les changements de phase et les dates de closing qui glissent. La S40 (01/10/2026) est la semaine de référence.
+`evolution.md` donne les écarts de chaque indicateur, les partenaires qui changent de statut d'intérêt, les nouveaux projets clients finaux, ceux qui sortent du rapport, les changements de phase et les dates de closing qui glissent. Les exports arrivent chaque lundi matin. **La référence est l'import du lundi 5 octobre 2026 (2026-S41)** : les évolutions sont calculées à partir de la S42. La S40 (export du jeudi 01/10/2026) est un point de départ provisoire, conservé pour mémoire.

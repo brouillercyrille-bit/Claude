@@ -1,5 +1,7 @@
 # Challenge IA — Semaine 40 (exports du 01/10/2026, version corrigée)
 
+> Point de départ provisoire. La référence du suivi est l'import du lundi 5 octobre 2026 (S41) : cette semaine ne sert pas de base de comparaison.
+
 Deck de la réunion : https://claude.ai/artifact/1F7i7xrzY2e1eJvb45tgaL (copie des slides dans `slides/`).
 
 ## Sources
