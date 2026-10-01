@@ -91,6 +91,11 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
 .btn.primary:hover { filter: brightness(1.06); }
 .btn.ghost { border-color: transparent; background: transparent; color: var(--teal-ink); padding-inline: 8px; }
 .btn.danger { color: var(--bad); }
+.del-btn { padding: 4px 8px; min-height: 30px; font-size: 12px; white-space: nowrap; }
+.del-btn.icon { padding: 2px 7px; min-height: 26px; font-size: 13px; opacity: .55; }
+tr:hover .del-btn.icon, .del-btn.icon:focus-visible, .del-btn.armed { opacity: 1; }
+.name-cell { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.name-cell > div { min-width: 0; }
 .btn.danger.armed { background: var(--bad); border-color: var(--bad); color: #fff; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 
@@ -168,7 +173,7 @@ table.t th.cur, table.t td.cur { background: var(--teal-soft); }
 .pick-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; color: var(--fg-2); }
 textarea#prodCat { width: 100%; min-height: 220px; background: var(--surface); border: 1px solid var(--line); border-radius: 5px; padding: 8px 10px; font: inherit; color: inherit; resize: vertical; }
 table.grid td, table.grid th { padding: 5px 4px; }
-table.grid td.sticky, table.grid th.sticky { position: sticky; left: 0; background: var(--surface); z-index: 1; min-width: 170px; max-width: 240px; padding-left: 8px; box-shadow: 1px 0 0 var(--line); }
+table.grid td.sticky, table.grid th.sticky { position: sticky; left: 0; background: var(--surface); z-index: 1; min-width: 210px; max-width: 260px; padding-left: 8px; box-shadow: 1px 0 0 var(--line); }
 table.grid td.sticky small { display: block; color: var(--muted); font-size: 11px; }
 table.grid td.off { background: repeating-linear-gradient(135deg, transparent 0 5px, var(--surface-2) 5px 7px); }
 table.grid tbody tr:hover td { background-color: var(--surface-2); }
@@ -348,6 +353,11 @@ form.stack { display: grid; gap: 12px; }
   const DEFAULT_PRODUCTS = ["Accès internet", "Call2Teams", "Cloud", "Couverture GSM", "Couverture Wifi", "Dstny UCaaS", "Dstny Digital Assistant", "Mobile", "Phonio", "Services & Installation", "Téléphonie IP", "Téléphonie Standard", "VoIPcube"];
   const catalog = () => (Array.isArray(S.settings.products) && S.settings.products.length ? S.settings.products : DEFAULT_PRODUCTS);
   // products a partner sells (older entries kept a single "product" text)
+  // partners sharing the same name (case/spacing-insensitive): likely duplicates
+  const normName = n => String(n || "").trim().toLowerCase().replace(/\s+/g, " ");
+  const dupIds = () => { const c = {}; S.partners.forEach(p => { const k = normName(p.name); c[k] = (c[k] || 0) + 1; }); return new Set(S.partners.filter(p => c[normName(p.name)] > 1).map(p => p.id)); };
+  const dupChip = (dups, p) => dups.has(p.id) ? ` <span class="chip warn" title="Un autre partenaire porte le même nom">Doublon ?</span>` : "";
+  const delBtn = (p, icon) => `<button type="button" class="btn ghost danger del-btn${icon ? " icon" : ""}" data-delp="${p.id}" data-label="${icon ? "✕" : "Supprimer"}" aria-label="Supprimer ${esc(p.name)}" title="Supprimer cette ligne">${icon ? "✕" : "Supprimer"}</button>`;
   const prods = p => Array.isArray(p.products) ? p.products : (p.product ? [p.product] : []);
   const prodBtn = (id, arr, ro, wide) => `<button type="button" class="prod-btn${wide ? " wide" : ""}${arr.length ? "" : " empty-v"}" data-pick="${id}" title="${esc(arr.join(", "))}" aria-label="Type de produit DFP : ${esc(arr.join(", ") || "aucun")}" ${ro ? "disabled" : ""}><span>${arr.length ? esc(arr.length <= 2 ? arr.join(", ") : arr.slice(0, 2).join(", ") + " +" + (arr.length - 2)) : '<span class="ph">À saisir</span>'}</span><span aria-hidden="true">▾</span></button>`;
 
@@ -618,6 +628,8 @@ form.stack { display: grid; gap: 12px; }
       .sort((a, b) => (a.recruited || "").localeCompare(b.recruited || "") || a.name.localeCompare(b.name, "fr"));
     const ro = !S.canWrite;
     const colTot = months.map(k => ps.reduce((t, p) => t + mrrOf(p, k), 0));
+    const dups = dupIds();
+    const nDup = ps.filter(p => dups.has(p.id)).length;
     const yearTot = colTot.reduce((a, b) => a + b, 0);
     const recruitedThisYear = ps.filter(p => p.recruited && yOf(p.recruited) === y).length;
 
@@ -646,11 +658,12 @@ form.stack { display: grid; gap: 12px; }
           <div class="field"><span>Total ${y}</span><b class="num" style="font-size:18px;line-height:36px">${fmt(yearTot)}</b></div>
           <div class="field"><span>Recrutés en ${y}</span><b class="num" style="font-size:18px;line-height:36px">${recruitedThisYear}</b></div>
         </div>
+        ${nDup ? `<div class="banner" style="margin-bottom:12px"><span><b>${nDup} lignes</b> portent le même nom qu'un autre partenaire (marquées « Doublon ? »). Vérifiez-les et supprimez celles en trop.</span></div>` : ""}
         ${ps.length ? `<div class="tbl-wrap grid-wrap" id="entryTable"><table class="t grid">
           <thead><tr><th class="sticky">Partenaire</th><th>Recruté le</th><th>OIP</th><th>Type de produit DFP</th>${months.map(k => `<th class="n ${k === CUR ? "cur" : ""}">${MONTHS[mOf(k) - 1]}</th>`).join("")}<th class="n">Total ${y}</th></tr></thead>
           <tbody>${ps.map(p => {
             const tot = months.reduce((t, k) => t + mrrOf(p, k), 0);
-            return `<tr><td class="sticky"><b>${esc(p.name)}</b><small>${esc(repName(p.repId))}</small></td>
+            return `<tr><td class="sticky"><div class="name-cell"><div><b>${esc(p.name)}</b>${dupChip(dups, p)}<small>${esc(repName(p.repId))}</small></div>${ro ? "" : delBtn(p, true)}</div></td>
               <td><input class="rec-in" type="month" data-pid="${p.id}" value="${p.recruited || ""}" max="${CUR}" aria-label="Mois de recrutement ${esc(p.name)}" ${ro ? "disabled" : ""}></td>
               <td><input class="oip-in" type="text" data-pid="${p.id}" value="${esc(p.oip || "")}" maxlength="60" placeholder="À saisir" aria-label="OIP ${esc(p.name)}" ${ro ? "disabled" : ""}></td>
               <td>${prodBtn(p.id, prods(p), ro)}</td>
@@ -683,6 +696,7 @@ form.stack { display: grid; gap: 12px; }
     if (!S.loaded) { el.innerHTML = ""; return; }
     if (!S.reps.length) { el.innerHTML = emptyTeam(); return; }
     const q = ui.partnerQ.trim().toLowerCase();
+    const dups = dupIds();
     const ps = S.partners
       .filter(p => ui.partnerRep === "all" || p.repId === ui.partnerRep)
       .filter(p => !q || p.name.toLowerCase().includes(q))
@@ -699,8 +713,8 @@ form.stack { display: grid; gap: 12px; }
           const ks = Object.keys(p.mrr || {}).filter(k => mrrOf(p, k) > 0).sort();
           const last = ks[ks.length - 1];
           const cum = ks.reduce((s, k) => s + mrrOf(p, k), 0);
-          return `<tr><td><b>${esc(p.name)}</b></td><td class="${p.oip ? "" : "muted"}">${p.oip ? esc(p.oip) : "—"}</td><td class="${prods(p).length ? "" : "muted"}">${prods(p).length ? esc(prods(p).join(", ")) : "—"}</td><td>${esc(repName(p.repId))}</td><td class="num">${p.recruited ? mLong(p.recruited) : "—"}</td><td class="n">${ks.length}</td><td class="n"><b>${fmt(cum)}</b></td><td class="n muted">${last ? mLabel(last) + " · " + fmt(mrrOf(p, last)) : "—"}</td>
-            <td class="n">${ro ? "" : `<button class="btn ghost" data-edit="${p.id}">Modifier</button>`}</td></tr>`;
+          return `<tr><td><b>${esc(p.name)}</b>${dupChip(dups, p)}</td><td class="${p.oip ? "" : "muted"}">${p.oip ? esc(p.oip) : "—"}</td><td class="${prods(p).length ? "" : "muted"}">${prods(p).length ? esc(prods(p).join(", ")) : "—"}</td><td>${esc(repName(p.repId))}</td><td class="num">${p.recruited ? mLong(p.recruited) : "—"}</td><td class="n">${ks.length}</td><td class="n"><b>${fmt(cum)}</b></td><td class="n muted">${last ? mLabel(last) + " · " + fmt(mrrOf(p, last)) : "—"}</td>
+            <td class="n"><div class="row-actions">${ro ? "" : `<button class="btn ghost" data-edit="${p.id}">Modifier</button>${delBtn(p)}`}</div></td></tr>`;
         }).join("")}</tbody></table></div>`
         : `<div class="empty"><strong>Aucun partenaire trouvé</strong><span>${S.partners.length ? "Modifiez la recherche ou le filtre." : "Ajoutez votre premier partenaire depuis l'onglet « Saisie MRR »."}</span>${!S.partners.length && !ro ? `<button class="btn primary" data-goto="entry">Ajouter un partenaire</button>` : ""}</div>`}
     </div>`;
@@ -909,6 +923,18 @@ form.stack { display: grid; gap: 12px; }
     if (t.dataset.goto) { ui.tab = t.dataset.goto; savePrefs(); render(); return; }
     if (t.dataset.gran) { ui.gran = t.dataset.gran; ui.period = defaultPeriod(ui.gran); savePrefs(); render(); return; }
     if (t.dataset.edit) { openEdit(t.dataset.edit); return; }
+    if (t.dataset.delp) {
+      const p = S.partners.find(x => x.id === t.dataset.delp);
+      if (!p) return;
+      if (!t.classList.contains("armed")) {
+        $$(".del-btn.armed").forEach(b => { b.classList.remove("armed"); b.textContent = b.dataset.label; });
+        t.classList.add("armed"); t.textContent = "Confirmer ?";
+        setTimeout(() => { if (t.isConnected) { t.classList.remove("armed"); t.textContent = t.dataset.label; } }, 5000);
+        return;
+      }
+      await guarded(() => api.deletePartner(p.id), `${p.name} supprimé`);
+      return;
+    }
     if (t.dataset.toggle) { const r = S.reps.find(x => x.id === t.dataset.toggle); if (r) await guarded(() => api.saveRep({ ...r, active: r.active === false })); return; }
     if (t.dataset.delrep) {
       if (!t.classList.contains("armed")) { t.classList.add("armed"); t.textContent = "Confirmer"; return; }
