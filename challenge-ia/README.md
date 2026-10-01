@@ -19,3 +19,14 @@ challenge-ia/
 ```
 
 Pour retrouver une semaine passée : ouvrir `semaines/<année>-S<numéro>/`. Les évolutions d'une semaine sur l'autre sont calculées à partir de `historique.csv`.
+
+## Évolutions semaine par semaine
+
+Chaque semaine est comparée à la précédente avec `scripts/suivi.py` (procédure complète dans le `CLAUDE.md` à la racine) :
+
+```
+python3 challenge-ia/scripts/suivi.py ingest 2026-S41 <export_interet> <export_opportunites>
+python3 challenge-ia/scripts/suivi.py compare 2026-S40 2026-S41
+```
+
+`evolution.md` donne les écarts de chaque indicateur, les partenaires qui changent de statut d'intérêt, les nouveaux projets clients finaux, ceux qui sortent du rapport, les changements de phase et les dates de closing qui glissent. La S40 (01/10/2026) est la semaine de référence.
