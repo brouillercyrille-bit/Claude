@@ -19,6 +19,7 @@ L'utilisateur envoie chaque **lundi matin** deux exports HubSpot : « Partenaire
 Règles de présentation :
 - Bien distinguer **intérêt partenaires** (teal, propriété « Intérêt Dstny Digital Assistant » sur le partenaire) et **projets clients finaux** (prune, transactions IA du Pipeline VI). Orange réservé aux alertes.
 - Il n'existe pas de champ « partenaires qualifiés » : ne pas l'utiliser.
+- Le chiffre clé est le nombre de **partenaires intéressés = « Intérêt » + « Intérêt confirmé »**. Les « Pas intéressé » se présentent à part ; ne jamais afficher le total des trois statuts comme un nombre de partenaires.
 - Toujours inclure une slide de vue d'ensemble sans nom de commercial.
 - Français, chiffres sourcés des exports, jamais de valeur inventée.
 
