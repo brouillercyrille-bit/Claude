@@ -25,3 +25,5 @@ Règles de présentation :
 # Point équipe : slide unique du lundi
 
 Chaque lundi matin, avec les données reçues, mettre à jour l'unique slide de https://claude.ai/artifact/G2DwaW3iV9KUgyU43GaZx8 (même lien, republier) : partenaires recrutés à date, projets ops en cours (les projets RevOps de l'utilisateur, pas les projets clients finaux) avec leur avancement, clean data ; écart vs le lundi précédent sur les chiffres. Aucun nom de commercial sur cette slide. Archiver les données de la semaine dans `point-equipe/semaines/<AAAA-Snn>/` et committer.
+
+Partenaires recrutés : export HubSpot « Partenaire recruté - Équipe » (une ligne par couple transaction × entreprise, phase « Partenaire recruté »). Recrutés à date = nombre d'entreprises distinctes ; trimestre = date de fermeture (T3 = 01/07 au 30/09). S41 est la référence de l'écart hebdomadaire. Signaler en clean data les dates de fermeture saisies en masse et les montants à 0 ou 1 €.
