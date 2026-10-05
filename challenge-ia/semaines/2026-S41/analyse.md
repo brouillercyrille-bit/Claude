@@ -5,14 +5,13 @@ Deck de la réunion : https://claude.ai/artifact/7wdcAQdckVatM2TfabNfVr (copie d
 Cette semaine est la **référence** du suivi : aucune évolution n'est calculée. Les comparaisons commencent à la S42 (lundi 12/10 vs lundi 05/10).
 
 ## Sources
-- `export-hubspot-interet-ia.xlsx` : rapport « Partenaires - Intérêt IA », 125 partenaires avec un statut d'intérêt renseigné.
+- `export-hubspot-interet-ia.xlsx` : rapport « Partenaires - Intérêt IA », 100 partenaires intéressés (78 à confirmer + 22 confirmés) et 25 pas intéressés.
 - `export-hubspot-opportunites-ia.xlsx` : rapport « Partenaires - Opportunités IA », 11 transactions (identiques à l'export du 01/10 : mêmes phases, mêmes dates).
 
 ## Chiffres clés
 | Indicateur | S41 |
 |---|---|
 | **Intérêt partenaires** | |
-| Partenaires avec un statut renseigné | 125 |
 | Intérêt (à confirmer) | 78 |
 | Intérêt confirmé | 22 |
 | Pas intéressé | 25 |
@@ -26,7 +25,7 @@ Cette semaine est la **référence** du suivi : aucune évolution n'est calculé
 Projets par commercial : Corinne Baroukh 5 (1 en cours), Jennifer Pereira 3, Alain Babaci 2 (1 en cours), Vincent Del Campo 1.
 
 ## Analyse
-1. **Intérêt large** : 100 partenaires intéressés sur 125, dont 22 confirmés ; 78 intérêts restent à confirmer.
+1. **Intérêt large** : 100 partenaires intéressés (78 + 22), dont 22 confirmés ; 25 pas intéressés ; 78 intérêts restent à confirmer.
 2. **Très peu de conversion en projets** : 3 partenaires intéressés sur 100 ont un projet client final. 19 confirmés n'ont pas encore de projet : priorité pour le pipeline 2027.
 3. **Propriété Intérêt pas à jour** : 7 partenaires ont un projet sans intérêt renseigné (Corinne 3, Jennifer 3, Vincent 1). On compterait plutôt 107 partenaires intéressés.
 4. **Pipeline figé depuis le 01/10** : aucune nouvelle opportunité, aucun changement de phase ni de date.
