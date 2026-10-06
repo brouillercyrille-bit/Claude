@@ -958,7 +958,7 @@ form.stack { display: grid; gap: 12px; }
     return new Promise((ok, ko) => { const sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; sc.onload = ok; sc.onerror = ko; document.head.appendChild(sc); });
   }
   function openImport() {
-    imp = { step: 1, file: "", wb: null, sheet: "", rows: [], header: 0, cols: { oip: -1, amt: -1, month: -1 }, monthMode: "fixed", month: CUR, mode: "replace", error: "" };
+    imp = { kind: "mrr", step: 1, file: "", wb: null, sheet: "", rows: [], header: 0, cols: { oip: -1, amt: -1, month: -1, name: -1, rep: -1 }, monthMode: "fixed", month: CUR, mode: "replace", error: "" };
     renderImport();
   }
   function guessColumns() {
@@ -966,7 +966,9 @@ form.stack { display: grid; gap: 12px; }
     const find = re => h.findIndex(c => re.test(c));
     imp.cols.oip = find(/oip/);
     imp.cols.amt = find(/mrr|montant|amount|ca\b|total|€/);
-    imp.cols.month = find(/mois|month|p[ée]riode|date/);
+    imp.cols.rep = find(/commercia|vendeur|sales|owner|propri|responsable|charg/);
+    imp.cols.name = h.findIndex((c, i) => i !== imp.cols.oip && i !== imp.cols.rep && /partenaire|raison|soci[ée]t[ée]|client|enseigne|compte|account|nom|name/.test(c));
+    imp.cols.month = find(imp.kind === "partners" ? /recrut|signature|cr[ée]ation|mois|date/ : /mois|month|p[ée]riode|date/);
     imp.monthMode = imp.cols.month >= 0 ? "col" : "fixed";
   }
   function pickSheet(name) {
@@ -1004,15 +1006,89 @@ form.stack { display: grid; gap: 12px; }
     }).sort((a, b) => a.p.name.localeCompare(b.p.name, "fr") || a.month.localeCompare(b.month));
     return { lines, updates, rejected: lines.filter(l => l.status !== "ok") };
   }
+  // salesperson name in the file -> rep: full name either order, or a unique first / last name
+  const normPerson = v => String(v ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z ]+/g, " ").replace(/\s+/g, " ").trim();
+  function repMatcher() {
+    const full = new Map(), part = new Map();
+    for (const r of S.reps) {
+      const n = normPerson(r.name); if (!n) continue;
+      full.set(n, r); full.set(n.split(" ").reverse().join(" "), r);
+      for (const w of n.split(" ")) { if (w.length < 3) continue; part.set(w, part.has(w) && part.get(w) !== r ? null : r); }
+    }
+    return raw => {
+      const n = normPerson(raw); if (!n) return null;
+      if (full.has(n)) return { rep: full.get(n), guess: false };
+      const words = n.split(" ").filter(w => w.length >= 3);
+      const hits = [...new Set(words.map(w => part.get(w)).filter(Boolean))];
+      return hits.length === 1 ? { rep: hits[0], guess: true } : null;
+    };
+  }
+  function buildPartnerPreview() {
+    const known = new Map();
+    for (const p of S.partners) for (const k of (p.oip ? oipKeys(p.oip) : [])) known.set(k, p);
+    const match = repMatcher(), seen = new Set(), creates = [], rejected = [];
+    imp.rows.slice(imp.header + 1).forEach((r, i) => {
+      const oip = String(r[imp.cols.oip] ?? "").trim(), repRaw = String(r[imp.cols.rep] ?? "").trim();
+      const name = imp.cols.name >= 0 ? String(r[imp.cols.name] ?? "").trim() : "";
+      if (!oip && !repRaw && !name) return;
+      const row = imp.header + i + 2, keys = oipKeys(oip);
+      const month = imp.monthMode === "col" ? parseMonthCell(r[imp.cols.month]) : imp.month;
+      const ex = keys.map(k => known.get(k)).find(Boolean);
+      const m = match(repRaw);
+      const base = { row, oip, repRaw };
+      if (!oip) return rejected.push({ ...base, status: "Pas d'OIP" });
+      if (ex) return rejected.push({ ...base, status: "Déjà dans l'outil", existing: ex.name });
+      if (keys.some(k => seen.has(k))) return rejected.push({ ...base, status: "OIP en double dans le fichier" });
+      if (!m) return rejected.push({ ...base, status: repRaw ? "Commercial inconnu" : "Pas de commercial" });
+      if (!month) return rejected.push({ ...base, status: "Mois illisible" });
+      keys.forEach(k => seen.add(k));
+      creates.push({ oip, name: name || oip, rep: m.rep, repGuess: m.guess, repRaw, month: month > CUR ? CUR : month });
+    });
+    return { creates, rejected };
+  }
+  async function applyPartnerImport() {
+    const list = imp.preview.creates;
+    $("#modalRoot").innerHTML = `<div class="overlay"><div class="modal"><h3>Création en cours…</h3><p class="sub" id="impProg">0 / ${list.length} partenaires</p></div></div>`;
+    let done = 0, failed = 0;
+    for (const c of list) {
+      try { await api.savePartner({ id: uid("p"), name: c.name, repId: c.rep.id, recruited: c.month, oip: c.oip, products: [], mrr: {}, createdAt: Date.now(), updatedAt: Date.now() }); } catch { failed++; }
+      done++; const el = $("#impProg"); if (el) el.textContent = `${done} / ${list.length} partenaires`;
+    }
+    $("#modalRoot").innerHTML = ""; imp = null;
+    toast(failed ? `${list.length - failed} partenaires créés, ${failed} en erreur : relancez l'import pour les restants.` : `${list.length} partenaire${list.length > 1 ? "s" : ""} créé${list.length > 1 ? "s" : ""}.`);
+    render();
+  }
   function renderImport() {
     const steps = ["Fichier", "Colonnes", "Vérification"].map((t, i) => i + 1 === imp.step ? `<b>${i + 1}. ${t}</b>` : `${i + 1}. ${t}`).join("<span>›</span>");
     let body = "";
     if (imp.step === 1) {
-      body = `<p class="sub">Choisissez le fichier Excel (.xlsx, .xls) ou CSV de la semaine. Les lignes sont reliées aux partenaires grâce à leur <b>OIP</b> ; rien n'est enregistré avant votre validation.</p>
+      body = `<div class="field" style="margin-bottom:14px"><span>Que contient le fichier ?</span>
+          <div class="seg" role="group" aria-label="Type d'import">${[["mrr", "Montants MRR"], ["partners", "Nouveaux partenaires"]].map(([k, l]) => `<button type="button" data-impkind="${k}" aria-pressed="${imp.kind === k}">${l}</button>`).join("")}</div></div>
+        <p class="sub">${imp.kind === "mrr"
+          ? "Fichier de la semaine avec les OIP et les montants : les lignes sont reliées aux partenaires grâce à leur <b>OIP</b>."
+          : "Fichier avec l'<b>OIP</b>, le <b>commercial</b> et, si possible, le nom du partenaire : chaque OIP absent de l'outil devient un nouveau partenaire attribué à son commercial."} Rien n'est enregistré avant votre validation.</p>
         <input type="file" id="impFile" accept=".xlsx,.xls,.csv">
         ${imp.error ? `<p class="saved" style="color:var(--bad)">${esc(imp.error)}</p>` : ""}`;
     }
-    if (imp.step === 2) {
+    if (imp.step === 2 && imp.kind === "partners") {
+      const h = imp.rows[imp.header] || [];
+      const opt = (sel) => `<option value="-1">—</option>${h.map((c, i) => `<option value="${i}" ${i === sel ? "selected" : ""}>${esc(String(c).trim() || "Colonne " + (i + 1))}</option>`).join("")}`;
+      const sample = imp.rows.slice(imp.header + 1, imp.header + 4);
+      body = `<div class="filters" style="margin-bottom:12px">
+          ${imp.wb.SheetNames.length > 1 ? `<label class="field"><span>Onglet</span><select id="impSheet">${imp.wb.SheetNames.map(n => `<option ${n === imp.sheet ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></label>` : ""}
+          <label class="field"><span>Ligne d'en-tête</span><input type="number" id="impHeader" min="1" value="${imp.header + 1}" style="width:90px"></label>
+          <label class="field"><span>Colonne OIP</span><select id="impOip">${opt(imp.cols.oip)}</select></label>
+          <label class="field"><span>Colonne commercial</span><select id="impRep">${opt(imp.cols.rep)}</select></label>
+          <label class="field"><span>Colonne nom du partenaire</span><select id="impName">${opt(imp.cols.name)}</select></label>
+        </div>
+        <div class="filters" style="margin-bottom:12px">
+          <label class="field"><span>Mois de recrutement</span><select id="impMonthMode"><option value="fixed" ${imp.monthMode === "fixed" ? "selected" : ""}>Le même pour tout le fichier</option><option value="col" ${imp.monthMode === "col" ? "selected" : ""}>Lu dans une colonne</option></select></label>
+          ${imp.monthMode === "fixed" ? `<label class="field"><span>Mois</span><input type="month" id="impMonth" value="${imp.month}" max="${CUR}"></label>` : `<label class="field"><span>Colonne du mois / date</span><select id="impMonthCol">${opt(imp.cols.month)}</select></label>`}
+        </div>
+        <p class="sub" style="margin:0 0 10px">Sans colonne « nom du partenaire », le partenaire est créé avec son OIP comme nom ; vous pourrez le renommer ensuite.</p>
+        <p class="label" style="margin:0 0 6px">Aperçu du fichier</p>
+        <div class="tbl-wrap"><table class="t"><thead><tr>${h.map(c => `<th>${esc(String(c))}</th>`).join("")}</tr></thead><tbody>${sample.map(r => `<tr>${h.map((_, i) => `<td>${esc(r[i] instanceof Date ? r[i].toLocaleDateString("fr-FR") : String(r[i] ?? ""))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+    } else if (imp.step === 2) {
       const h = imp.rows[imp.header] || [];
       const opt = (sel, allowNone) => `${allowNone ? `<option value="-1">—</option>` : ""}${h.map((c, i) => `<option value="${i}" ${i === sel ? "selected" : ""}>${esc(String(c).trim() || "Colonne " + (i + 1))}</option>`).join("")}`;
       const sample = imp.rows.slice(imp.header + 1, imp.header + 4);
@@ -1030,7 +1106,21 @@ form.stack { display: grid; gap: 12px; }
         <p class="label" style="margin:0 0 6px">Aperçu du fichier</p>
         <div class="tbl-wrap"><table class="t"><thead><tr>${h.map(c => `<th>${esc(String(c))}</th>`).join("")}</tr></thead><tbody>${sample.map(r => `<tr>${h.map((_, i) => `<td>${esc(r[i] instanceof Date ? r[i].toLocaleDateString("fr-FR") : String(r[i] ?? ""))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
     }
-    if (imp.step === 3) {
+    if (imp.step === 3 && imp.kind === "partners") {
+      const pv = imp.preview = buildPartnerPreview();
+      const byStatus = {}; pv.rejected.forEach(l => { byStatus[l.status] = (byStatus[l.status] || 0) + 1; });
+      body = `<div class="imp-sum">
+          <span class="chip good">✓ ${pv.creates.length} partenaire${pv.creates.length > 1 ? "s" : ""} à créer</span>
+          ${Object.entries(byStatus).map(([k, n]) => `<span class="chip ${k === "Déjà dans l'outil" || k === "OIP en double dans le fichier" ? "neutral" : "bad"}">${n} · ${esc(k)}</span>`).join("")}
+        </div>
+        ${pv.creates.length ? `<div class="imp-tbl"><table class="t"><thead><tr><th>OIP</th><th>Partenaire</th><th>Commercial</th><th>Recruté en</th></tr></thead><tbody>
+          ${pv.creates.map(c => `<tr class="hl"><td>${esc(c.oip)}</td><td><b>${esc(c.name)}</b>${c.name === c.oip ? ' <span class="muted">(nom = OIP)</span>' : ""}</td><td>${esc(c.rep.name)}${c.repGuess ? ` <span class="muted">(fichier : ${esc(c.repRaw)})</span>` : ""}</td><td>${esc(mLong(c.month))}</td></tr>`).join("")}
+        </tbody></table></div>` : `<div class="empty"><strong>Aucun partenaire à créer</strong><span>Tous les OIP du fichier sont déjà dans l'outil, ou aucune ligne n'a pu être reliée à un commercial.</span></div>`}
+        ${pv.rejected.length ? `<details style="margin-top:12px" ${pv.rejected.some(l => l.status === "Commercial inconnu") ? "open" : ""}><summary><b>${pv.rejected.length} ligne${pv.rejected.length > 1 ? "s" : ""} non créée${pv.rejected.length > 1 ? "s" : ""}</b></summary>
+          <div class="imp-tbl" style="margin-top:8px"><table class="t"><thead><tr><th>Ligne</th><th>OIP</th><th>Commercial (fichier)</th><th>Raison</th></tr></thead><tbody>
+          ${pv.rejected.map(l => `<tr><td class="num muted">${l.row}</td><td>${esc(l.oip || "—")}</td><td>${esc(l.repRaw || "—")}</td><td>${esc(l.status)}${l.status === "Commercial inconnu" ? ` <span class="muted">: vérifiez l'orthographe, ou ajoutez-le dans « Équipe &amp; objectifs »</span>` : l.status === "Déjà dans l'outil" ? ` <span class="muted">(${esc(l.existing)})</span>` : ""}</td></tr>`).join("")}
+          </tbody></table></div></details>` : ""}`;
+    } else if (imp.step === 3) {
       const pv = imp.preview = buildPreview();
       const changed = pv.updates.filter(u => !u.same);
       const byStatus = {}; pv.rejected.forEach(l => { byStatus[l.status] = (byStatus[l.status] || 0) + 1; });
@@ -1047,15 +1137,16 @@ form.stack { display: grid; gap: 12px; }
           ${pv.rejected.map(l => `<tr><td class="num muted">${l.row}</td><td>${esc(l.oip || "—")}</td><td class="n">${isFinite(l.amt) ? fmt(l.amt) : "—"}</td><td>${esc(l.status)}${l.status === "OIP inconnu" ? ` <span class="muted">: ajoutez cet OIP au partenaire dans la grille de saisie</span>` : ""}</td></tr>`).join("")}
           </tbody></table></div></details>` : ""}`;
     }
-    const nChanged = imp.step === 3 ? imp.preview.updates.filter(u => !u.same).length : 0;
+    const nChanged = imp.step === 3 ? (imp.kind === "partners" ? imp.preview.creates.length : imp.preview.updates.filter(u => !u.same).length) : 0;
+    const needCols = imp.kind === "partners" ? imp.cols.oip < 0 || imp.cols.rep < 0 : imp.cols.oip < 0 || imp.cols.amt < 0;
     $("#modalRoot").innerHTML = `<div class="overlay" id="ov"><div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="impT">
-      <h3 id="impT">Importer les montants MRR</h3>
+      <h3 id="impT">${imp.kind === "partners" ? "Créer des partenaires depuis un fichier" : "Importer les montants MRR"}</h3>
       <div class="steps">${steps}</div>
       ${body}
       <div class="acts">
         <button type="button" class="btn" data-imp="${imp.step === 1 ? "close" : "back"}">${imp.step === 1 ? "Annuler" : "Retour"}</button>
-        ${imp.step === 2 ? `<button type="button" class="btn primary" data-imp="preview" ${imp.cols.oip < 0 || imp.cols.amt < 0 || (imp.monthMode === "col" && imp.cols.month < 0) ? "disabled" : ""}>Vérifier les correspondances</button>` : ""}
-        ${imp.step === 3 ? `<button type="button" class="btn primary" data-imp="apply" ${nChanged ? "" : "disabled"}>Importer ${nChanged} montant${nChanged > 1 ? "s" : ""}</button>` : ""}
+        ${imp.step === 2 ? `<button type="button" class="btn primary" data-imp="preview" ${needCols || (imp.monthMode === "col" && imp.cols.month < 0) ? "disabled" : ""}>Vérifier les correspondances</button>` : ""}
+        ${imp.step === 3 ? `<button type="button" class="btn primary" data-imp="apply" ${nChanged ? "" : "disabled"}>${imp.kind === "partners" ? `Créer ${nChanged} partenaire${nChanged > 1 ? "s" : ""}` : `Importer ${nChanged} montant${nChanged > 1 ? "s" : ""}`}</button>` : ""}
       </div></div></div>`;
   }
   async function applyImport() {
@@ -1078,12 +1169,14 @@ form.stack { display: grid; gap: 12px; }
     render();
   }
   document.addEventListener("click", async e => {
+    const k = e.target.closest("[data-impkind]");
+    if (k && imp) { imp.kind = k.dataset.impkind; renderImport(); return; }
     const b = e.target.closest("[data-imp]"); if (!b || !imp) return;
     const a = b.dataset.imp;
     if (a === "close") { $("#modalRoot").innerHTML = ""; imp = null; return; }
     if (a === "back") { imp.step--; renderImport(); return; }
     if (a === "preview") { imp.step = 3; renderImport(); return; }
-    if (a === "apply") applyImport();
+    if (a === "apply") (imp.kind === "partners" ? applyPartnerImport : applyImport)();
   });
   document.addEventListener("change", async e => {
     if (!imp) return;
@@ -1103,11 +1196,13 @@ form.stack { display: grid; gap: 12px; }
     if (t.id === "impHeader") { imp.header = Math.max(0, (+t.value || 1) - 1); guessColumns(); }
     if (t.id === "impOip") imp.cols.oip = +t.value;
     if (t.id === "impAmt") imp.cols.amt = +t.value;
+    if (t.id === "impRep") imp.cols.rep = +t.value;
+    if (t.id === "impName") imp.cols.name = +t.value;
     if (t.id === "impMonthCol") imp.cols.month = +t.value;
     if (t.id === "impMonthMode") imp.monthMode = t.value;
     if (t.id === "impMonth" && t.value) imp.month = t.value > CUR ? CUR : t.value;
     if (t.id === "impMode") imp.mode = t.value;
-    if (["impSheet", "impHeader", "impOip", "impAmt", "impMonthCol", "impMonthMode", "impMonth", "impMode"].includes(t.id)) renderImport();
+    if (["impSheet", "impHeader", "impOip", "impAmt", "impRep", "impName", "impMonthCol", "impMonthMode", "impMonth", "impMode"].includes(t.id)) renderImport();
   });
 
   let editProducts = [];
