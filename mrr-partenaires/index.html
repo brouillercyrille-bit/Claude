@@ -200,6 +200,13 @@ form.stack { display: grid; gap: 12px; }
 
 .overlay { position: fixed; inset: 0; background: rgba(20, 16, 28, .5); display: grid; place-items: center; padding: 16px; z-index: 40; }
 .modal { background: var(--surface); border-radius: 8px; padding: 20px; width: min(420px, 100%); box-shadow: var(--shadow); }
+.modal.wide { width: min(980px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; }
+.modal .steps { display: flex; gap: 16px; font-size: 12px; color: var(--muted); margin-bottom: 14px; flex-wrap: wrap; }
+.modal .steps b { color: var(--teal-ink); }
+.imp-sum { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.imp-tbl { max-height: 44vh; overflow: auto; border: 1px solid var(--line); border-radius: 6px; }
+.imp-tbl table.t th { position: sticky; top: 0; background: var(--surface); z-index: 1; }
+.chip.neutral { background: var(--surface-2); color: var(--fg-2); }
 .modal h3 { margin: 0 0 14px; font-size: 16px; }
 .modal .acts { display: flex; justify-content: space-between; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
 .toast { position: fixed; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: var(--brand-dark); color: var(--on-dark); padding: 9px 16px; border-radius: 6px; font-weight: 600; font-size: 13px; z-index: 60; box-shadow: var(--shadow); }
@@ -712,6 +719,7 @@ form.stack { display: grid; gap: 12px; }
         <div class="toolbar">
           <div><h2>MRR mensuel par partenaire · ${y}</h2>
           <p class="sub" style="margin:0">Une ligne par partenaire recruté, une colonne par mois : saisissez le nouveau MRR généré chaque mois. Les cases avant le mois de recrutement sont grisées. Entrée passe à la ligne suivante ; chaque montant est enregistré dès que vous quittez la case.</p></div>
+          ${ro ? "" : `<div style="display:grid;gap:4px;justify-items:end"><button class="btn primary" type="button" data-act="import">Importer un fichier Excel</button>${S.settings.lastImport ? `<small class="muted">Dernier import : ${esc(S.settings.lastImport.file || "")} · ${new Date(S.settings.lastImport.at).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</small>` : ""}</div>`}
         </div>
         <div class="filters" style="margin-bottom:14px">
           <label class="field"><span>Année</span><select id="entryYear">${years.map(yy => `<option value="${yy}" ${yy === y ? "selected" : ""}>${yy}</option>`).join("")}</select></label>
@@ -921,6 +929,187 @@ form.stack { display: grid; gap: 12px; }
   }
 
   // ---------- modal ----------
+  // ---------- Excel import: match file OIPs with partners' OIPs ----------
+  let imp = null;
+  const normOip = v => String(v ?? "").trim().toUpperCase().replace(/\s+/g, "");
+  const oipKeys = v => { const n = normOip(v); return /^\d+$/.test(n) ? [n, n.replace(/^0+/, "")] : [n]; };
+  const parseImportAmount = v => {
+    if (typeof v === "number") return isFinite(v) ? cents(v) : NaN;
+    let t = String(v ?? "").replace(/[^0-9,.\-]/g, "");
+    if (!t) return NaN;
+    if (t.includes(",") && t.includes(".")) t = t.lastIndexOf(",") > t.lastIndexOf(".") ? t.replace(/\./g, "").replace(",", ".") : t.replace(/,/g, "");
+    else t = t.replace(",", ".");
+    const n = +t; return isFinite(n) ? cents(n) : NaN;
+  };
+  const MONTH_WORDS = { jan: 1, janv: 1, janvier: 1, fev: 2, fevr: 2, fevrier: 2, feb: 2, mar: 3, mars: 3, avr: 4, avril: 4, apr: 4, mai: 5, may: 5, juin: 6, jun: 6, juil: 7, juillet: 7, jul: 7, aou: 8, aout: 8, aug: 8, sep: 9, sept: 9, septembre: 9, oct: 10, octobre: 10, nov: 11, novembre: 11, dec: 12, decembre: 12 };
+  function parseMonthCell(v) {
+    if (v instanceof Date && !isNaN(v)) return ym(v.getFullYear(), v.getMonth() + 1);
+    if (typeof v === "number" && v > 20000 && v < 80000) { const d = new Date(Math.round((v - 25569) * 864e5)); return ym(d.getUTCFullYear(), d.getUTCMonth() + 1); }
+    const t = String(v ?? "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    let m;
+    if ((m = t.match(/^(\d{4})[-\/.](\d{1,2})/))) return ym(+m[1], +m[2]);
+    if ((m = t.match(/^\d{1,2}[-\/.](\d{1,2})[-\/.](\d{2,4})/))) return ym(+m[2] < 100 ? 2000 + +m[2] : +m[2], +m[1]);
+    if ((m = t.match(/^(\d{1,2})[-\/.](\d{4})$/))) return ym(+m[2], +m[1]);
+    if ((m = t.match(/([a-z]+)\.?[\s\-\/']*(\d{2,4})/)) && MONTH_WORDS[m[1]]) return ym(+m[2] < 100 ? 2000 + +m[2] : +m[2], MONTH_WORDS[m[1]]);
+    return null;
+  }
+  function loadSheetJs() {
+    if (window.XLSX) return Promise.resolve();
+    return new Promise((ok, ko) => { const sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; sc.onload = ok; sc.onerror = ko; document.head.appendChild(sc); });
+  }
+  function openImport() {
+    imp = { step: 1, file: "", wb: null, sheet: "", rows: [], header: 0, cols: { oip: -1, amt: -1, month: -1 }, monthMode: "fixed", month: CUR, mode: "replace", error: "" };
+    renderImport();
+  }
+  function guessColumns() {
+    const h = (imp.rows[imp.header] || []).map(c => String(c).toLowerCase());
+    const find = re => h.findIndex(c => re.test(c));
+    imp.cols.oip = find(/oip/);
+    imp.cols.amt = find(/mrr|montant|amount|ca\b|total|€/);
+    imp.cols.month = find(/mois|month|p[ée]riode|date/);
+    imp.monthMode = imp.cols.month >= 0 ? "col" : "fixed";
+  }
+  function pickSheet(name) {
+    imp.sheet = name;
+    imp.rows = XLSX.utils.sheet_to_json(imp.wb.Sheets[name], { header: 1, raw: true, defval: "" });
+    // header = first row with at least 2 filled cells
+    imp.header = Math.max(0, imp.rows.findIndex(r => r.filter(c => String(c).trim() !== "").length >= 2));
+    guessColumns();
+  }
+  function buildPreview() {
+    const index = new Map(), dupOip = new Set();
+    for (const p of S.partners) for (const k of (p.oip ? oipKeys(p.oip) : [])) { if (index.has(k) && index.get(k) !== p) dupOip.add(k); else index.set(k, p); }
+    const lines = [], groups = new Map();
+    imp.rows.slice(imp.header + 1).forEach((r, i) => {
+      const rawOip = r[imp.cols.oip];
+      if (String(rawOip ?? "").trim() === "" && String(r[imp.cols.amt] ?? "").trim() === "") return;
+      const line = { row: imp.header + i + 2, oip: String(rawOip ?? "").trim(), amt: parseImportAmount(r[imp.cols.amt]), month: imp.monthMode === "col" ? parseMonthCell(r[imp.cols.month]) : imp.month };
+      const keys = oipKeys(rawOip);
+      line.partner = keys.map(k => index.get(k)).find(Boolean) || null;
+      if (!line.oip) line.status = "Pas d'OIP";
+      else if (keys.some(k => dupOip.has(k))) line.status = "OIP en double dans l'outil";
+      else if (!line.partner) line.status = "OIP inconnu";
+      else if (!isFinite(line.amt)) line.status = "Montant illisible";
+      else if (!line.month) line.status = "Mois illisible";
+      else if (line.month > CUR) line.status = "Mois futur";
+      else line.status = "ok";
+      lines.push(line);
+      if (line.status === "ok") { const g = line.partner.id + "|" + line.month; groups.set(g, (groups.get(g) || 0) + line.amt); }
+    });
+    const updates = [...groups].map(([g, sum]) => {
+      const [pid, month] = g.split("|"); const p = S.partners.find(x => x.id === pid);
+      const cur = (p.mrr || {})[month];
+      const next = cents(imp.mode === "add" ? (+cur || 0) + sum : sum);
+      return { p, month, cur, next, same: cur !== undefined && +cur === next, before: p.recruited && month < p.recruited };
+    }).sort((a, b) => a.p.name.localeCompare(b.p.name, "fr") || a.month.localeCompare(b.month));
+    return { lines, updates, rejected: lines.filter(l => l.status !== "ok") };
+  }
+  function renderImport() {
+    const steps = ["Fichier", "Colonnes", "Vérification"].map((t, i) => i + 1 === imp.step ? `<b>${i + 1}. ${t}</b>` : `${i + 1}. ${t}`).join("<span>›</span>");
+    let body = "";
+    if (imp.step === 1) {
+      body = `<p class="sub">Choisissez le fichier Excel (.xlsx, .xls) ou CSV de la semaine. Les lignes sont reliées aux partenaires grâce à leur <b>OIP</b> ; rien n'est enregistré avant votre validation.</p>
+        <input type="file" id="impFile" accept=".xlsx,.xls,.csv">
+        ${imp.error ? `<p class="saved" style="color:var(--bad)">${esc(imp.error)}</p>` : ""}`;
+    }
+    if (imp.step === 2) {
+      const h = imp.rows[imp.header] || [];
+      const opt = (sel, allowNone) => `${allowNone ? `<option value="-1">—</option>` : ""}${h.map((c, i) => `<option value="${i}" ${i === sel ? "selected" : ""}>${esc(String(c).trim() || "Colonne " + (i + 1))}</option>`).join("")}`;
+      const sample = imp.rows.slice(imp.header + 1, imp.header + 4);
+      body = `<div class="filters" style="margin-bottom:12px">
+          ${imp.wb.SheetNames.length > 1 ? `<label class="field"><span>Onglet</span><select id="impSheet">${imp.wb.SheetNames.map(n => `<option ${n === imp.sheet ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></label>` : ""}
+          <label class="field"><span>Ligne d'en-tête</span><input type="number" id="impHeader" min="1" value="${imp.header + 1}" style="width:90px"></label>
+          <label class="field"><span>Colonne OIP</span><select id="impOip">${opt(imp.cols.oip, true)}</select></label>
+          <label class="field"><span>Colonne montant MRR</span><select id="impAmt">${opt(imp.cols.amt, true)}</select></label>
+        </div>
+        <div class="filters" style="margin-bottom:12px">
+          <label class="field"><span>Mois concerné</span><select id="impMonthMode"><option value="fixed" ${imp.monthMode === "fixed" ? "selected" : ""}>Le même pour tout le fichier</option><option value="col" ${imp.monthMode === "col" ? "selected" : ""}>Lu dans une colonne</option></select></label>
+          ${imp.monthMode === "fixed" ? `<label class="field"><span>Mois</span><input type="month" id="impMonth" value="${imp.month}" max="${CUR}"></label>` : `<label class="field"><span>Colonne du mois / date</span><select id="impMonthCol">${opt(imp.cols.month, true)}</select></label>`}
+          <label class="field"><span>Si un montant existe déjà</span><select id="impMode"><option value="replace" ${imp.mode === "replace" ? "selected" : ""}>Remplacer par celui du fichier</option><option value="add" ${imp.mode === "add" ? "selected" : ""}>Ajouter au montant existant</option></select></label>
+        </div>
+        <p class="label" style="margin:0 0 6px">Aperçu du fichier</p>
+        <div class="tbl-wrap"><table class="t"><thead><tr>${h.map(c => `<th>${esc(String(c))}</th>`).join("")}</tr></thead><tbody>${sample.map(r => `<tr>${h.map((_, i) => `<td>${esc(r[i] instanceof Date ? r[i].toLocaleDateString("fr-FR") : String(r[i] ?? ""))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+    }
+    if (imp.step === 3) {
+      const pv = imp.preview = buildPreview();
+      const changed = pv.updates.filter(u => !u.same);
+      const byStatus = {}; pv.rejected.forEach(l => { byStatus[l.status] = (byStatus[l.status] || 0) + 1; });
+      body = `<div class="imp-sum">
+          <span class="chip good">✓ ${pv.lines.length - pv.rejected.length} ligne${pv.lines.length - pv.rejected.length > 1 ? "s" : ""} reconnue${pv.lines.length - pv.rejected.length > 1 ? "s" : ""}</span>
+          <span class="chip neutral">${changed.length} montant${changed.length > 1 ? "s" : ""} à mettre à jour</span>
+          ${Object.entries(byStatus).map(([k, n]) => `<span class="chip ${k === "OIP inconnu" || k === "Pas d'OIP" ? "warn" : "bad"}">${n} · ${esc(k)}</span>`).join("")}
+        </div>
+        ${pv.updates.length ? `<div class="imp-tbl"><table class="t"><thead><tr><th>OIP</th><th>Partenaire</th><th>Commercial</th><th>Mois</th><th class="n">Actuel</th><th class="n">Après import</th><th></th></tr></thead><tbody>
+          ${pv.updates.map(u => `<tr class="${u.same ? "" : "hl"}"><td>${esc(u.p.oip)}</td><td><b>${esc(u.p.name)}</b></td><td class="muted">${esc(repName(u.p.repId))}</td><td>${esc(mLong(u.month))}</td><td class="n">${u.cur === undefined ? "—" : fmt(u.cur)}</td><td class="n"><b>${fmt(u.next)}</b></td><td>${u.same ? `<span class="chip neutral">Inchangé</span>` : u.before ? `<span class="chip warn" title="Mois antérieur au recrutement">Avant recrutement</span>` : ""}</td></tr>`).join("")}
+        </tbody></table></div>` : `<div class="empty"><strong>Aucune ligne reconnue</strong><span>Vérifiez les colonnes choisies et que les OIP du fichier sont bien saisis dans l'outil.</span></div>`}
+        ${pv.rejected.length ? `<details style="margin-top:12px"><summary><b>${pv.rejected.length} ligne${pv.rejected.length > 1 ? "s" : ""} non importée${pv.rejected.length > 1 ? "s" : ""}</b> (cliquez pour voir)</summary>
+          <div class="imp-tbl" style="margin-top:8px"><table class="t"><thead><tr><th>Ligne</th><th>OIP</th><th class="n">Montant</th><th>Raison</th></tr></thead><tbody>
+          ${pv.rejected.map(l => `<tr><td class="num muted">${l.row}</td><td>${esc(l.oip || "—")}</td><td class="n">${isFinite(l.amt) ? fmt(l.amt) : "—"}</td><td>${esc(l.status)}${l.status === "OIP inconnu" ? ` <span class="muted">: ajoutez cet OIP au partenaire dans la grille de saisie</span>` : ""}</td></tr>`).join("")}
+          </tbody></table></div></details>` : ""}`;
+    }
+    const nChanged = imp.step === 3 ? imp.preview.updates.filter(u => !u.same).length : 0;
+    $("#modalRoot").innerHTML = `<div class="overlay" id="ov"><div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="impT">
+      <h3 id="impT">Importer les montants MRR</h3>
+      <div class="steps">${steps}</div>
+      ${body}
+      <div class="acts">
+        <button type="button" class="btn" data-imp="${imp.step === 1 ? "close" : "back"}">${imp.step === 1 ? "Annuler" : "Retour"}</button>
+        ${imp.step === 2 ? `<button type="button" class="btn primary" data-imp="preview" ${imp.cols.oip < 0 || imp.cols.amt < 0 || (imp.monthMode === "col" && imp.cols.month < 0) ? "disabled" : ""}>Vérifier les correspondances</button>` : ""}
+        ${imp.step === 3 ? `<button type="button" class="btn primary" data-imp="apply" ${nChanged ? "" : "disabled"}>Importer ${nChanged} montant${nChanged > 1 ? "s" : ""}</button>` : ""}
+      </div></div></div>`;
+  }
+  async function applyImport() {
+    const ups = imp.preview.updates.filter(u => !u.same);
+    const byP = new Map();
+    ups.forEach(u => { if (!byP.has(u.p.id)) byP.set(u.p.id, []); byP.get(u.p.id).push(u); });
+    $("#modalRoot").innerHTML = `<div class="overlay"><div class="modal"><h3>Import en cours…</h3><p class="sub" id="impProg">0 / ${byP.size} partenaires</p></div></div>`;
+    let done = 0, failed = 0;
+    for (const [pid, list] of byP) {
+      const p = S.partners.find(x => x.id === pid);
+      if (!p) { failed++; continue; }
+      const mrr = { ...(p.mrr || {}) };
+      list.forEach(u => { mrr[u.month] = u.next; });
+      try { await api.savePartner({ ...p, mrr, updatedAt: Date.now() }); } catch { failed++; }
+      done++; const el = $("#impProg"); if (el) el.textContent = `${done} / ${byP.size} partenaires`;
+    }
+    try { await api.saveSettings({ ...S.settings, lastImport: { at: Date.now(), file: imp.file, amounts: ups.length, rejected: imp.preview.rejected.length } }); } catch {}
+    $("#modalRoot").innerHTML = ""; imp = null;
+    toast(failed ? `Import terminé avec ${failed} erreur${failed > 1 ? "s" : ""} : réessayez pour les partenaires concernés.` : `Import terminé : ${ups.length} montant${ups.length > 1 ? "s" : ""} mis à jour.`);
+    render();
+  }
+  document.addEventListener("click", async e => {
+    const b = e.target.closest("[data-imp]"); if (!b || !imp) return;
+    const a = b.dataset.imp;
+    if (a === "close") { $("#modalRoot").innerHTML = ""; imp = null; return; }
+    if (a === "back") { imp.step--; renderImport(); return; }
+    if (a === "preview") { imp.step = 3; renderImport(); return; }
+    if (a === "apply") applyImport();
+  });
+  document.addEventListener("change", async e => {
+    if (!imp) return;
+    const t = e.target;
+    if (t.id === "impFile" && t.files && t.files[0]) {
+      const f = t.files[0];
+      try {
+        await loadSheetJs();
+        const buf = await f.arrayBuffer();
+        imp.wb = XLSX.read(buf, { type: "array", cellDates: true });
+        imp.file = f.name; imp.error = "";
+        pickSheet(imp.wb.SheetNames[0]); imp.step = 2;
+      } catch { imp.error = "Ce fichier n'a pas pu être lu. Vérifiez qu'il s'agit bien d'un fichier Excel ou CSV."; }
+      renderImport(); return;
+    }
+    if (t.id === "impSheet") pickSheet(t.value);
+    if (t.id === "impHeader") { imp.header = Math.max(0, (+t.value || 1) - 1); guessColumns(); }
+    if (t.id === "impOip") imp.cols.oip = +t.value;
+    if (t.id === "impAmt") imp.cols.amt = +t.value;
+    if (t.id === "impMonthCol") imp.cols.month = +t.value;
+    if (t.id === "impMonthMode") imp.monthMode = t.value;
+    if (t.id === "impMonth" && t.value) imp.month = t.value > CUR ? CUR : t.value;
+    if (t.id === "impMode") imp.mode = t.value;
+    if (["impSheet", "impHeader", "impOip", "impAmt", "impMonthCol", "impMonthMode", "impMonth", "impMode"].includes(t.id)) renderImport();
+  });
+
   let editProducts = [];
   function openEdit(id) {
     const p = S.partners.find(x => x.id === id);
@@ -1091,6 +1280,7 @@ form.stack { display: grid; gap: 12px; }
     }
     const act = t.dataset.act;
     if (act === "export") exportCsv();
+    if (act === "import") openImport();
     if (act === "demo") loadDemo();
     if (act === "seed9") {
       for (let i = 0; i < 9; i++) { const ok = await guarded(() => api.saveRep({ id: uid("r"), name: `Commercial ${i + 1}`, order: i, active: true })); if (!ok) break; }
