@@ -66,6 +66,7 @@ table, input, select, button { font: inherit; color: inherit; }
 .tab:focus-visible { outline: 2px solid var(--orange); outline-offset: -2px; }
 
 main { max-width: 1200px; margin: 0 auto; padding: 20px 16px 48px; display: grid; gap: 20px; }
+main > section, main > div { min-width: 0; }
 .banner { padding: 10px 14px; border-radius: var(--r); background: var(--warn-bg); color: var(--fg); font-size: 13px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
 .banner.info { background: var(--teal-soft); }
 
@@ -183,6 +184,10 @@ table.grid tbody tr:hover td.sticky { background: var(--surface-2); }
 form.stack { display: grid; gap: 12px; }
 .tgt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
 .tgt-grid input { width: 100%; text-align: right; font-variant-numeric: tabular-nums; }
+.b-table th small { display: block; font-size: 10px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.b-cell { white-space: nowrap; }
+.b-cell b { display: block; font-variant-numeric: tabular-nums; }
+.b-cell .chip { margin-top: 2px; }
 .empty { padding: 28px 16px; text-align: center; color: var(--fg-2); display: grid; gap: 10px; justify-items: center; }
 .empty strong { color: var(--fg); font-size: 15px; }
 .row-actions { display: flex; gap: 2px; justify-content: flex-end; }
@@ -207,11 +212,12 @@ form.stack { display: grid; gap: 12px; }
       <div class="mark" aria-hidden="true"></div>
       <div>
         <h1>MRR Partenaires</h1>
-        <p>Recrutement partenaires · objectif de MRR par commercial ce mois-ci : <span id="hdrTarget">500 €</span></p>
+        <p>Objectif de MRR par commercial ce mois-ci : <span id="hdrTarget">500 €</span><span id="hdrUpdated"></span></p>
       </div>
     </div>
     <nav class="tabs" role="tablist" aria-label="Sections">
       <button class="tab" role="tab" id="tab-dash" data-tab="dash" aria-selected="true">Tableau de bord</button>
+      <button class="tab" role="tab" id="tab-bonus" data-tab="bonus" aria-selected="false">Suivi des primes</button>
       <button class="tab" role="tab" id="tab-entry" data-tab="entry" aria-selected="false">Saisie MRR mensuel</button>
       <button class="tab" role="tab" id="tab-partners" data-tab="partners" aria-selected="false">Partenaires</button>
       <button class="tab" role="tab" id="tab-team" data-tab="team" aria-selected="false">Équipe &amp; objectifs</button>
@@ -222,6 +228,7 @@ form.stack { display: grid; gap: 12px; }
 <main id="app">
   <div id="banner"></div>
   <section id="view-dash"></section>
+  <section id="view-bonus" hidden></section>
   <section id="view-entry" hidden></section>
   <section id="view-partners" hidden></section>
   <section id="view-team" hidden></section>
@@ -268,7 +275,9 @@ form.stack { display: grid; gap: 12px; }
   const S = { reps: [], partners: [], settings: { monthlyTarget: 500 }, mode: "loading", canWrite: true, loaded: false };
   const prefs = safeLS.get("mrr-ui") || {};
   const ui = {
-    tab: ["dash", "entry", "partners", "team"].includes(location.hash.slice(1)) ? location.hash.slice(1) : (prefs.tab || "dash"),
+    bonusYear: now.getFullYear(),
+    bonusGran: "month",
+    tab: ["dash", "bonus", "entry", "partners", "team"].includes(location.hash.slice(1)) ? location.hash.slice(1) : (prefs.tab || "dash"),
     gran: prefs.gran || "quarter",
     period: null,
     dashRep: "all",
@@ -310,6 +319,7 @@ form.stack { display: grid; gap: 12px; }
       S.partners = S.partners.filter(p => p.id !== id); local.persist(); render();
     },
     async saveSettings(s) {
+      s = { ...s, updatedAt: Date.now() };
       if (db) return db.doc("settings/main").set(s);
       S.settings = s; local.persist(); render();
     }
@@ -351,6 +361,7 @@ form.stack { display: grid; gap: 12px; }
   const target = () => +S.settings.monthlyTarget || 0;
   // objective per salesperson for a given month: month override, else the default
   const targetFor = k => { const o = (S.settings.targets || {})[k]; return o === undefined || o === null ? target() : +o || 0; };
+  const lastUpdate = () => Math.max(0, +S.settings.updatedAt || 0, ...S.partners.map(p => +p.updatedAt || +p.createdAt || 0));
   const sumTargets = ks => ks.reduce((t, k) => t + targetFor(k), 0);
   const mrrOf = (p, k) => +((p.mrr || {})[k]) || 0;
   const DEFAULT_PRODUCTS = ["Accès internet", "Call2Teams", "Cloud", "Couverture GSM", "Couverture Wifi", "Dstny UCaaS", "Dstny Digital Assistant", "Mobile", "Phonio", "Services & Installation", "Téléphonie IP", "Téléphonie Standard", "VoIPcube"];
@@ -414,13 +425,16 @@ form.stack { display: grid; gap: 12px; }
   // ---------- render ----------
   function render() {
     $("#hdrTarget").textContent = fmt(targetFor(CUR));
+    const lu = lastUpdate();
+    $("#hdrUpdated").textContent = lu ? " · données mises à jour le " + new Date(lu).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) : "";
     $$(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.tab === ui.tab)));
-    ["dash", "entry", "partners", "team"].forEach(v => { $("#view-" + v).hidden = v !== ui.tab; });
+    ["dash", "bonus", "entry", "partners", "team"].forEach(v => { $("#view-" + v).hidden = v !== ui.tab; });
     renderBanner();
     if (ui.tab === "dash") renderDash();
     if (ui.tab === "entry") renderEntry();
     if (ui.tab === "partners") renderPartners();
     if (ui.tab === "team") renderTeam();
+    if (ui.tab === "bonus") renderBonus();
   }
 
   function renderBanner() {
@@ -723,6 +737,50 @@ form.stack { display: grid; gap: 12px; }
     </div>`;
   }
 
+  // ----- Bonus tracking -----
+  function renderBonus() {
+    const el = $("#view-bonus");
+    if (!S.loaded) { el.innerHTML = ""; return; }
+    if (!S.reps.length) { el.innerHTML = emptyTeam(); return; }
+    const y = ui.bonusYear, q = ui.bonusGran === "quarter";
+    const y0 = Math.min(yOf(dataBounds().min), now.getFullYear() - 1);
+    const years = []; for (let yy = now.getFullYear(); yy >= y0; yy--) years.push(yy);
+    const all = range(ym(y, 1), ym(y, 12));
+    // columns: months, or quarters (3 months each)
+    const cols = q ? [1, 2, 3, 4].map(n => ({ label: `T${n}`, months: all.slice(n * 3 - 3, n * 3) })) : all.map(k => ({ label: MONTHS[mOf(k) - 1], months: [k] }));
+    const reps = sortedReps().filter(r => r.active !== false || S.partners.some(p => p.repId === r.id && all.some(k => mrrOf(p, k) > 0)));
+    const curCol = cols.findIndex(c => c.months.includes(CUR));
+    const cell = (r, c) => {
+      const el = c.months.filter(k => k <= CUR);
+      if (!el.length) return `<td class="n zero">—</td>`;
+      const mrr = S.partners.filter(p => p.repId === r.id).reduce((t, p) => t + c.months.reduce((u, k) => u + mrrOf(p, k), 0), 0);
+      const tgt = r.active === false ? 0 : sumTargets(c.months);
+      const open = c.months.some(k => k >= CUR);
+      const ratio = tgt ? mrr / tgt : NaN;
+      return `<td class="n b-cell ${open ? "cur" : ""}" data-tip="<b>${esc(r.name)} · ${esc(c.label)} ${y}</b><br>MRR : ${fmt(mrr)}<br>Objectif : ${fmt(tgt)}${open ? "<br><i>Période en cours</i>" : ""}"><b>${fmt(mrr)}</b>${tgt ? chip(ratio) : mrr ? `<span class="muted" style="font-size:11px">sans objectif</span>` : ""}</td>`;
+    };
+    const yearEl = all.filter(k => k <= CUR);
+    el.innerHTML = `<div class="card">
+      <div class="toolbar">
+        <div><h2>Suivi des primes · ${y}</h2>
+        <p class="sub" style="margin:0">MRR généré par les nouveaux partenaires de chaque commercial, comparé à son objectif ${q ? "trimestriel" : "mensuel"}. ${lastUpdate() ? "Données à jour au " + new Date(lastUpdate()).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) + "." : ""}</p></div>
+        <div class="filters">
+          <div class="field"><span>Vue</span><div class="seg" role="group" aria-label="Vue">${[["month", "Mois"], ["quarter", "Trimestres"]].map(([g, l]) => `<button data-bgran="${g}" aria-pressed="${ui.bonusGran === g}">${l}</button>`).join("")}</div></div>
+          <label class="field"><span>Année</span><select id="bonusYear">${years.map(yy => `<option value="${yy}" ${yy === y ? "selected" : ""}>${yy}</option>`).join("")}</select></label>
+        </div>
+      </div>
+      <div class="tbl-wrap"><table class="t b-table">
+        <thead><tr><th>Commercial</th>${cols.map((c, i) => `<th class="n ${i === curCol ? "cur" : ""}">${c.label}<small>obj. ${fmt(sumTargets(c.months))}</small></th>`).join("")}<th class="n">Cumul ${y}<small>obj. à date ${fmt(sumTargets(yearEl))}</small></th></tr></thead>
+        <tbody>${reps.map(r => {
+          const mrr = S.partners.filter(p => p.repId === r.id).reduce((t, p) => t + yearEl.reduce((u, k) => u + mrrOf(p, k), 0), 0);
+          const tgt = r.active === false ? 0 : sumTargets(yearEl);
+          return `<tr><td style="white-space:nowrap"><b>${esc(r.name)}</b>${r.active === false ? ' <span class="muted">(inactif)</span>' : ""}</td>${cols.map(c => cell(r, c)).join("")}<td class="n b-cell"><b>${fmt(mrr)}</b>${tgt ? chip(mrr / tgt) : ""}</td></tr>`;
+        }).join("")}</tbody>
+      </table></div>
+      <div class="legend"><span><span class="chip good">✓ ≥ 100 %</span> objectif atteint</span><span><span class="chip warn">● 70 à 99 %</span> proche</span><span><span class="chip bad">▼ &lt; 70 %</span> en retard</span><span>Colonne surlignée : période en cours, chiffres encore provisoires.</span></div>
+    </div>`;
+  }
+
   // ----- Team -----
   function renderTeam() {
     const el = $("#view-team");
@@ -924,6 +982,7 @@ form.stack { display: grid; gap: 12px; }
     if (t.dataset.pick) { openPicker(t); return; }
     if (t.dataset.tab) { ui.tab = t.dataset.tab; savePrefs(); render(); return; }
     if (t.dataset.goto) { ui.tab = t.dataset.goto; savePrefs(); render(); return; }
+    if (t.dataset.bgran) { ui.bonusGran = t.dataset.bgran; render(); return; }
     if (t.dataset.gran) { ui.gran = t.dataset.gran; ui.period = defaultPeriod(ui.gran); savePrefs(); render(); return; }
     if (t.dataset.edit) { openEdit(t.dataset.edit); return; }
     if (t.dataset.delp) {
@@ -959,6 +1018,7 @@ form.stack { display: grid; gap: 12px; }
     if (t.id === "entryYear") { ui.entryYear = +t.value; render(); }
     if (t.id === "entryRep") { ui.entryRep = t.value; savePrefs(); render(); }
     if (t.id === "pRep") { ui.partnerRep = t.value; render(); }
+    if (t.id === "bonusYear") { ui.bonusYear = +t.value; render(); }
     if (t.id === "teamYear") { ui.teamYear = +t.value; render(); }
     if (t.classList.contains("mrr-in")) {
       const p = S.partners.find(x => x.id === t.dataset.pid);
