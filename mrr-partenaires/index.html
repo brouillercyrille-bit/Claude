@@ -221,7 +221,7 @@ form.stack { display: grid; gap: 12px; }
     </div>
     <nav class="tabs" role="tablist" aria-label="Sections">
       <button class="tab" role="tab" id="tab-dash" data-tab="dash" aria-selected="true">Tableau de bord</button>
-      <button class="tab" role="tab" id="tab-bonus" data-tab="bonus" aria-selected="false">Suivi des primes</button>
+      <button class="tab" role="tab" id="tab-bonus" data-tab="bonus" aria-selected="false">Suivi MRR par commercial</button>
       <button class="tab" role="tab" id="tab-entry" data-tab="entry" aria-selected="false">Saisie MRR mensuel</button>
       <button class="tab" role="tab" id="tab-partners" data-tab="partners" aria-selected="false">Partenaires</button>
       <button class="tab" role="tab" id="tab-team" data-tab="team" aria-selected="false">Équipe &amp; objectifs</button>
@@ -807,8 +807,8 @@ form.stack { display: grid; gap: 12px; }
     const yearEl = all.filter(k => k <= CUR);
     el.innerHTML = `<div class="card">
       <div class="toolbar">
-        <div><h2>Suivi des primes · ${y}</h2>
-        <p class="sub" style="margin:0">MRR généré par les nouveaux partenaires de chaque commercial, comparé à son objectif ${q ? "trimestriel" : "mensuel"}. ${lastUpdate() ? "Données à jour au " + new Date(lastUpdate()).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) + "." : ""}</p></div>
+        <div><h2>Nouveau MRR par commercial · ${y}</h2>
+        <p class="sub" style="margin:0">Nouveau MRR généré ${q ? "chaque trimestre" : "chaque mois"} par les partenaires recrutés de chaque commercial, comparé à son objectif ${q ? "trimestriel" : "mensuel"}. ${lastUpdate() ? "Données à jour au " + new Date(lastUpdate()).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) + "." : ""}</p></div>
         <div class="filters">
           <div class="field"><span>Vue</span><div class="seg" role="group" aria-label="Vue">${[["month", "Mois"], ["quarter", "Trimestres"]].map(([g, l]) => `<button data-bgran="${g}" aria-pressed="${ui.bonusGran === g}">${l}</button>`).join("")}</div></div>
           <label class="field"><span>Année</span><select id="bonusYear">${years.map(yy => `<option value="${yy}" ${yy === y ? "selected" : ""}>${yy}</option>`).join("")}</select></label>
