@@ -188,6 +188,10 @@ form.stack { display: grid; gap: 12px; }
 .b-cell { white-space: nowrap; }
 .b-cell b { display: block; font-variant-numeric: tabular-nums; }
 .b-cell .chip { margin-top: 2px; }
+.strip { display: flex; gap: 3px; }
+.strip i { width: 12px; height: 16px; border-radius: 2px; background: var(--surface-2); }
+.strip i.on { background: var(--teal); }
+.foot { margin: 0; font-size: 12px; color: var(--muted); text-align: center; }
 .empty { padding: 28px 16px; text-align: center; color: var(--fg-2); display: grid; gap: 10px; justify-items: center; }
 .empty strong { color: var(--fg); font-size: 15px; }
 .row-actions { display: flex; gap: 2px; justify-content: flex-end; }
@@ -221,6 +225,7 @@ form.stack { display: grid; gap: 12px; }
       <button class="tab" role="tab" id="tab-entry" data-tab="entry" aria-selected="false">Saisie MRR mensuel</button>
       <button class="tab" role="tab" id="tab-partners" data-tab="partners" aria-selected="false">Partenaires</button>
       <button class="tab" role="tab" id="tab-team" data-tab="team" aria-selected="false">Équipe &amp; objectifs</button>
+      <button class="tab" role="tab" id="tab-visits" data-tab="visits" aria-selected="false" hidden>Connexions</button>
     </nav>
   </div>
 </header>
@@ -232,6 +237,8 @@ form.stack { display: grid; gap: 12px; }
   <section id="view-entry" hidden></section>
   <section id="view-partners" hidden></section>
   <section id="view-team" hidden></section>
+  <section id="view-visits" hidden></section>
+  <p class="foot">Les consultations de cette page (personne, date) sont enregistrées pour le suivi de l'équipe. Seuls les administrateurs de la page les voient.</p>
 </main>
 <div class="tip" id="tip" hidden></div>
 <div id="modalRoot"></div>
@@ -272,12 +279,12 @@ form.stack { display: grid; gap: 12px; }
   };
 
   // ---------- state ----------
-  const S = { reps: [], partners: [], settings: { monthlyTarget: 500 }, mode: "loading", canWrite: true, loaded: false };
+  const S = { reps: [], partners: [], settings: { monthlyTarget: 500 }, mode: "loading", canWrite: true, loaded: false, isAdmin: false, visits: null, names: {} };
   const prefs = safeLS.get("mrr-ui") || {};
   const ui = {
     bonusYear: now.getFullYear(),
     bonusGran: "month",
-    tab: ["dash", "bonus", "entry", "partners", "team"].includes(location.hash.slice(1)) ? location.hash.slice(1) : (prefs.tab || "dash"),
+    tab: ["dash", "bonus", "entry", "partners", "team", "visits"].includes(location.hash.slice(1)) ? location.hash.slice(1) : (prefs.tab || "dash"),
     gran: prefs.gran || "quarter",
     period: null,
     dashRep: "all",
@@ -292,7 +299,31 @@ form.stack { display: grid; gap: 12px; }
   const savePrefs = () => safeLS.set("mrr-ui", { tab: ui.tab, gran: ui.gran, entryRep: ui.entryRep });
 
   // ---------- backend (shared db, or this browser as fallback) ----------
-  let db = null, downloads = null;
+  let db = null, downloads = null, userApi = null;
+  const dayKey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  // one visit per page load, written to the viewer's own document
+  async function logVisit(uid) {
+    try {
+      const ref = db.doc("visits/" + uid);
+      const snap = await ref.get();
+      const d = snap.exists ? snap.data() : {};
+      const days = { ...(d.days || {}) }, k = dayKey(new Date());
+      days[k] = (days[k] || 0) + 1;
+      const ks = Object.keys(days).sort();
+      while (ks.length > 180) delete days[ks.shift()];
+      await ref.set({ count: (+d.count || 0) + 1, firstAt: d.firstAt || Date.now(), lastAt: Date.now(), days });
+    } catch {}
+  }
+  async function resolveNames() {
+    if (!userApi || !S.visits) return;
+    const missing = S.visits.map(v => v.id).filter(id => !(id in S.names));
+    if (!missing.length) return;
+    try {
+      const ps = await userApi.profiles(missing);
+      missing.forEach(id => { S.names[id] = (ps[id] && ps[id].name) || ""; });
+      if (ui.tab === "visits") render();
+    } catch {}
+  }
   const LOCAL_KEY = "mrr-partenaires-data";
   const local = {
     load() { const d = safeLS.get(LOCAL_KEY); if (d) { S.reps = d.reps || []; S.partners = d.partners || []; S.settings = d.settings || S.settings; } },
@@ -345,6 +376,17 @@ form.stack { display: grid; gap: 12px; }
     if (!db) { startLocal(); return; }
     S.mode = "db";
     if (user) { try { const w = await user.can("data.write"); if (w === false) S.canWrite = false; } catch {} }
+    userApi = user;
+    if (user) {
+      try {
+        const [admin, owner, uid] = await Promise.all([user.canEdit(), user.isOwner(), user.id()]);
+        S.isAdmin = !!admin;
+        if (uid && !owner) logVisit(uid);
+      } catch {}
+    }
+    if (S.isAdmin) {
+      db.collection("visits").onSnapshot(s => { S.visits = s.docs.map(d => ({ id: d.id, ...d.data() })); resolveNames(); if (ui.tab === "visits") render(); }, () => { S.visits = []; });
+    }
     const ready = { reps: false, partners: false, settings: false };
     const done = k => { ready[k] = true; if (ready.reps && ready.partners && ready.settings) S.loaded = true; render(); };
     const onErr = () => { S.mode = "error"; render(); };
@@ -352,7 +394,7 @@ form.stack { display: grid; gap: 12px; }
     db.collection("partners").onSnapshot(s => { S.partners = s.docs.map(d => ({ id: d.id, ...d.data() })); done("partners"); }, onErr);
     db.doc("settings/main").onSnapshot(s => { S.settings = s.exists ? { monthlyTarget: 500, ...s.data() } : { monthlyTarget: 500 }; done("settings"); }, onErr);
   }
-  function startLocal() { S.mode = "local"; local.load(); S.loaded = true; render(); }
+  function startLocal() { S.mode = "local"; S.isAdmin = true; S.visits = []; local.load(); S.loaded = true; render(); }
 
   // ---------- derived data ----------
   const repName = id => (S.reps.find(r => r.id === id) || {}).name || "Non attribué";
@@ -427,14 +469,17 @@ form.stack { display: grid; gap: 12px; }
     $("#hdrTarget").textContent = fmt(targetFor(CUR));
     const lu = lastUpdate();
     $("#hdrUpdated").textContent = lu ? " · données mises à jour le " + new Date(lu).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) : "";
+    $("#tab-visits").hidden = !S.isAdmin;
+    if (ui.tab === "visits" && !S.isAdmin && S.mode !== "loading") ui.tab = "dash";
     $$(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.tab === ui.tab)));
-    ["dash", "bonus", "entry", "partners", "team"].forEach(v => { $("#view-" + v).hidden = v !== ui.tab; });
+    ["dash", "bonus", "entry", "partners", "team", "visits"].forEach(v => { $("#view-" + v).hidden = v !== ui.tab; });
     renderBanner();
     if (ui.tab === "dash") renderDash();
     if (ui.tab === "entry") renderEntry();
     if (ui.tab === "partners") renderPartners();
     if (ui.tab === "team") renderTeam();
     if (ui.tab === "bonus") renderBonus();
+    if (ui.tab === "visits") renderVisits();
   }
 
   function renderBanner() {
@@ -779,6 +824,48 @@ form.stack { display: grid; gap: 12px; }
       </table></div>
       <div class="legend"><span><span class="chip good">✓ ≥ 100 %</span> objectif atteint</span><span><span class="chip warn">● 70 à 99 %</span> proche</span><span><span class="chip bad">▼ &lt; 70 %</span> en retard</span><span>Colonne surlignée : période en cours, chiffres encore provisoires.</span></div>
     </div>`;
+  }
+
+  // ----- Visits (admins only) -----
+  function renderVisits() {
+    const el = $("#view-visits");
+    if (!S.isAdmin) { el.innerHTML = ""; return; }
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const lastDays = n => { const out = []; for (let i = n - 1; i >= 0; i--) { const d = new Date(today); d.setDate(d.getDate() - i); out.push(dayKey(d)); } return out; };
+    const d14 = lastDays(14), d7 = new Set(lastDays(7)), d30 = new Set(lastDays(30));
+    const vs = (S.visits || []).map(v => {
+      const days = v.days || {};
+      const sum = set => Object.entries(days).reduce((t, [k, n]) => t + (set.has(k) ? +n || 0 : 0), 0);
+      const ago = v.lastAt ? Math.floor((today - new Date(new Date(v.lastAt).setHours(0, 0, 0, 0))) / 864e5) : 999;
+      return { ...v, days, w7: sum(d7), w30: sum(d30), ago };
+    }).sort((a, b) => (b.lastAt || 0) - (a.lastAt || 0));
+    const todayN = vs.filter(v => v.ago === 0).length, weekN = vs.filter(v => v.w7 > 0).length;
+    const status = ago => ago <= 2 ? `<span class="chip good">✓ Actif</span>` : ago <= 7 ? `<span class="chip warn">● À relancer</span>` : `<span class="chip bad">▼ Inactif</span>`;
+    const when = t => t ? new Date(t).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—";
+    const agoTxt = a => a === 0 ? "aujourd'hui" : a === 1 ? "hier" : `il y a ${a} jours`;
+    el.innerHTML = `<div style="display:grid;gap:20px">
+      <div class="kpis">
+        <div class="kpi"><span class="label">Consultations aujourd'hui</span><span class="v">${todayN}</span><span class="d">personne${todayN > 1 ? "s" : ""} différente${todayN > 1 ? "s" : ""}</span></div>
+        <div class="kpi"><span class="label">7 derniers jours</span><span class="v">${weekN}</span><span class="d">personne${weekN > 1 ? "s" : ""} ont consulté la page</span></div>
+        <div class="kpi"><span class="label">Personnes suivies</span><span class="v">${vs.length}</span><span class="d">depuis la mise en place du suivi</span></div>
+      </div>
+      <div class="card">
+        <h2>Connexions de l'équipe</h2>
+        <p class="sub">Une visite est comptée à chaque ouverture de la page. Visible uniquement par vous et les Éditeurs. Vos propres visites ne sont pas comptées.</p>
+        ${S.mode === "local" ? `<div class="empty"><strong>Suivi disponible sur la version en ligne</strong><span>Les connexions s'enregistrent quand l'équipe ouvre la page depuis son lien claude.ai.</span></div>`
+        : !vs.length ? `<div class="empty"><strong>Aucune consultation enregistrée pour l'instant</strong><span>Chaque commercial apparaîtra ici dès sa première ouverture de la page. Partagez-la en accès « Contributeur » : un accès « Lecteur » ne permet pas d'enregistrer la visite.</span></div>`
+        : `<div class="tbl-wrap"><table class="t">
+          <thead><tr><th>Personne</th><th>Statut</th><th>Dernière visite</th><th class="n">7 jours</th><th class="n">30 jours</th><th class="n">Total</th><th>14 derniers jours</th><th>Première visite</th></tr></thead>
+          <tbody>${vs.map(v => `<tr>
+            <td style="white-space:nowrap"><b>${esc(S.names[v.id] || "Utilisateur")}</b></td>
+            <td>${status(v.ago)}</td>
+            <td style="white-space:nowrap">${when(v.lastAt)}<small class="muted" style="display:block">${agoTxt(v.ago)}</small></td>
+            <td class="n">${v.w7}</td><td class="n">${v.w30}</td><td class="n">${+v.count || 0}</td>
+            <td><div class="strip">${d14.map(k => { const n = +v.days[k] || 0; const d = new Date(k + "T12:00:00"); return `<i class="${n ? "on" : ""}" data-tip="${d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} : ${n ? n + " visite" + (n > 1 ? "s" : "") : "aucune visite"}"></i>`; }).join("")}</div></td>
+            <td class="muted" style="white-space:nowrap">${v.firstAt ? new Date(v.firstAt).toLocaleDateString("fr-FR") : "—"}</td>
+          </tr>`).join("")}</tbody></table></div>
+          <div class="legend"><span><span class="chip good">✓ Actif</span> visite ces 2 derniers jours</span><span><span class="chip warn">● À relancer</span> 3 à 7 jours</span><span><span class="chip bad">▼ Inactif</span> plus de 7 jours</span></div>`}
+      </div></div>`;
   }
 
   // ----- Team -----
