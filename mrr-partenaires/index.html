@@ -417,7 +417,8 @@ form.stack { display: grid; gap: 12px; }
   const catalog = () => (Array.isArray(S.settings.products) && S.settings.products.length ? S.settings.products : DEFAULT_PRODUCTS);
   // products a partner sells (older entries kept a single "product" text)
   // partners sharing the same name (case/spacing-insensitive): likely duplicates
-  const normName = n => String(n || "").trim().toLowerCase().replace(/\s+/g, " ");
+  // ignores case, accents, spaces and punctuation: "IT-Block" = "IT BLOCK", "Aisne Sécurité" = "AISNE Securite"
+  const normName = n => String(n || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "");
   const dupIds = () => { const c = {}; S.partners.forEach(p => { const k = normName(p.name); c[k] = (c[k] || 0) + 1; }); return new Set(S.partners.filter(p => c[normName(p.name)] > 1).map(p => p.id)); };
   const dupChip = (dups, p) => dups.has(p.id) ? ` <span class="chip warn" title="Un autre partenaire porte le même nom">Doublon ?</span>` : "";
   const delBtn = (p, icon) => `<button type="button" class="btn ghost danger del-btn${icon ? " icon" : ""}" data-delp="${p.id}" data-label="${icon ? "✕" : "Supprimer"}" aria-label="Supprimer ${esc(p.name)}" title="Supprimer cette ligne">${icon ? "✕" : "Supprimer"}</button>`;
@@ -931,8 +932,17 @@ form.stack { display: grid; gap: 12px; }
   // ---------- modal ----------
   // ---------- Excel import: match file OIPs with partners' OIPs ----------
   let imp = null;
-  const normOip = v => String(v ?? "").trim().toUpperCase().replace(/\s+/g, "");
-  const oipKeys = v => { const n = normOip(v); return /^\d+$/.test(n) ? [n, n.replace(/^0+/, "")] : [n]; };
+  // "OIP-00002245 - AAMSET", "oip 2245" and "2245" all give the same key
+  const OIP_RE = /OIP[\s\-_]*(\d+)/i;
+  const normOip = v => {
+    const t = String(v ?? "").trim().toUpperCase(), m = t.match(OIP_RE);
+    if (m) return "OIP#" + m[1].replace(/^0+/, "");
+    const d = t.replace(/\s+/g, "");
+    return /^\d+$/.test(d) ? "OIP#" + d.replace(/^0+/, "") : d;
+  };
+  const oipKeys = v => { const n = normOip(v); return n ? [n] : []; };
+  // clean OIP and name out of a cell like "OIP-00002245 - AAMSET"
+  const splitOipCell = v => { const t = String(v ?? "").trim(), m = t.match(OIP_RE); return m ? { oip: m[0].toUpperCase().replace(/\s+/g, ""), rest: t.slice(m.index + m[0].length).replace(/^[\s\-–:|]+/, "").trim() } : { oip: t, rest: "" }; };
   const parseImportAmount = v => {
     if (typeof v === "number") return isFinite(v) ? cents(v) : NaN;
     let t = String(v ?? "").replace(/[^0-9,.\-]/g, "");
@@ -965,6 +975,11 @@ form.stack { display: grid; gap: 12px; }
     const h = (imp.rows[imp.header] || []).map(c => String(c).toLowerCase());
     const find = re => h.findIndex(c => re.test(c));
     imp.cols.oip = find(/oip/);
+    if (imp.cols.oip < 0) {
+      // no "OIP" header: take the column whose values look like OIP-12345
+      const sample = imp.rows.slice(imp.header + 1, imp.header + 30);
+      imp.cols.oip = h.findIndex((_, i) => sample.filter(r => OIP_RE.test(String(r[i] ?? ""))).length >= Math.min(3, sample.length));
+    }
     imp.cols.amt = find(/mrr|montant|amount|ca\b|total|€/);
     imp.cols.rep = find(/commercia|vendeur|sales|owner|propri|responsable|charg/);
     imp.cols.name = h.findIndex((c, i) => i !== imp.cols.oip && i !== imp.cols.rep && /partenaire|raison|soci[ée]t[ée]|client|enseigne|compte|account|nom|name/.test(c));
@@ -1042,7 +1057,8 @@ form.stack { display: grid; gap: 12px; }
       if (!m) return rejected.push({ ...base, status: repRaw ? "Commercial inconnu" : "Pas de commercial" });
       if (!month) return rejected.push({ ...base, status: "Mois illisible" });
       keys.forEach(k => seen.add(k));
-      creates.push({ oip, name: name || oip, rep: m.rep, repGuess: m.guess, repRaw, month: month > CUR ? CUR : month });
+      const cell = splitOipCell(oip);
+      creates.push({ oip: cell.oip, name: name || cell.rest || cell.oip, rep: m.rep, repGuess: m.guess, repRaw, month: month > CUR ? CUR : month });
     });
     return { creates, rejected };
   }
@@ -1134,7 +1150,8 @@ form.stack { display: grid; gap: 12px; }
         </tbody></table></div>` : `<div class="empty"><strong>Aucune ligne reconnue</strong><span>Vérifiez les colonnes choisies et que les OIP du fichier sont bien saisis dans l'outil.</span></div>`}
         ${pv.rejected.length ? `<details style="margin-top:12px"><summary><b>${pv.rejected.length} ligne${pv.rejected.length > 1 ? "s" : ""} non importée${pv.rejected.length > 1 ? "s" : ""}</b> (cliquez pour voir)</summary>
           <div class="imp-tbl" style="margin-top:8px"><table class="t"><thead><tr><th>Ligne</th><th>OIP</th><th class="n">Montant</th><th>Raison</th></tr></thead><tbody>
-          ${pv.rejected.map(l => `<tr><td class="num muted">${l.row}</td><td>${esc(l.oip || "—")}</td><td class="n">${isFinite(l.amt) ? fmt(l.amt) : "—"}</td><td>${esc(l.status)}${l.status === "OIP inconnu" ? ` <span class="muted">: ajoutez cet OIP au partenaire dans la grille de saisie</span>` : ""}</td></tr>`).join("")}
+          ${pv.rejected.slice(0, 200).map(l => `<tr><td class="num muted">${l.row}</td><td>${esc(l.oip || "—")}</td><td class="n">${isFinite(l.amt) ? fmt(l.amt) : "—"}</td><td>${esc(l.status)}${l.status === "OIP inconnu" ? ` <span class="muted">: ajoutez cet OIP au partenaire dans la grille de saisie</span>` : ""}</td></tr>`).join("")}
+          ${pv.rejected.length > 200 ? `<tr><td colspan="4" class="muted">… et ${pv.rejected.length - 200} autres lignes. C'est normal si le fichier contient tous les partenaires et pas seulement ceux suivis ici.</td></tr>` : ""}
           </tbody></table></div></details>` : ""}`;
     }
     const nChanged = imp.step === 3 ? (imp.kind === "partners" ? imp.preview.creates.length : imp.preview.updates.filter(u => !u.same).length) : 0;
