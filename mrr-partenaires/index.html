@@ -1199,7 +1199,9 @@ form.stack { display: grid; gap: 12px; }
   function buildPreview() {
     const index = new Map(), dupOip = new Set(), byName = new Map(), dupName = new Set();
     for (const p of S.partners) for (const k of (p.oip ? oipKeys(p.oip) : [])) { if (index.has(k) && index.get(k) !== p) dupOip.add(k); else index.set(k, p); }
-    for (const p of S.partners) { const k = normName(p.name); if (!k) continue; if (byName.has(k)) dupName.add(k); else byName.set(k, p); }
+    // names compared without legal forms: "NJ PARTNERS SAS" = "NJ Partners"
+    const coKey = n => normName(String(n || "").replace(/\b(sas|sasu|sarl|eurl|sa|sci|snc|scop|selarl|ltd|gmbh)\b\.?/gi, " "));
+    for (const p of S.partners) { const k = coKey(p.name); if (!k) continue; if (byName.has(k)) dupName.add(k); else byName.set(k, p); }
     const lines = [], groups = new Map(), glines = new Map();
     const cellTxt = v => v instanceof Date ? v.toLocaleDateString("fr-FR") : String(v ?? "").trim().slice(0, 40);
     imp.rows.slice(imp.header + 1).forEach((r, i) => {
@@ -1209,7 +1211,7 @@ form.stack { display: grid; gap: 12px; }
       const keys = OIP_RE.test(line.oip) || /^\d+$/.test(line.oip) ? oipKeys(rawOip) : [];
       line.partner = keys.map(k => index.get(k)).find(Boolean) || null;
       // no OIP match: try the partner name (also "OIP-123 - NAME" cells)
-      const nk = normName(splitOipCell(rawOip).rest || line.oip);
+      const nk = coKey(splitOipCell(rawOip).rest || line.oip);
       if (!line.partner && nk && byName.has(nk) && !dupName.has(nk)) { line.partner = byName.get(nk); line.byName = true; }
       if (!line.oip) line.status = "Pas d'OIP ni de nom";
       else if (!line.byName && keys.some(k => dupOip.has(k))) line.status = "OIP en double dans l'outil";
