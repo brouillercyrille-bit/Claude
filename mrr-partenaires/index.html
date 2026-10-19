@@ -156,7 +156,7 @@ table.t th.cur, table.t td.cur { background: var(--teal-soft); }
 .rec-in { width: 140px; min-height: 32px !important; padding: 4px 6px !important; }
 .oip-in { width: 110px; min-height: 32px !important; padding: 4px 6px !important; }
 .oip-in:placeholder-shown { border-style: dashed; }
-.ptype-in { min-height: 32px !important; padding: 4px 6px !important; width: 190px; }
+.ptype-in { min-height: 32px !important; padding: 4px 6px !important; width: 200px; }
 .ptype-in.empty-v { border-style: dashed; color: var(--muted); }
 .prod-btn { display: inline-flex; align-items: center; justify-content: space-between; gap: 6px; width: 170px; min-height: 32px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); cursor: pointer; text-align: left; font-size: 13px; }
 .prod-btn.wide { width: 100%; min-height: 36px; }
@@ -496,6 +496,7 @@ form.stack { display: grid; gap: 12px; }
     if (ui.fType === "operateur" && t !== "operateur" && t !== "both") return false;
     if (ui.fType === "ambassadeur" && t !== "ambassadeur" && t !== "both") return false;
     if (ui.fType === "both" && t !== "both") return false;
+    if (ui.fType.startsWith("reveil_") && t !== ui.fType) return false;
     if (ui.fType === "none" && t) return false;
     if (ui.fProd === "none" && prods(p).length) return false;
     if (ui.fProd !== "all" && ui.fProd !== "none" && !prods(p).includes(ui.fProd)) return false;
@@ -504,10 +505,10 @@ form.stack { display: grid; gap: 12px; }
   const FP = () => S.partners.filter(passFilters);
   const filtersOn = () => ui.fType !== "all" || ui.fProd !== "all";
   const filterFields = () => `
-    <label class="field"><span>Type de partenaire</span><select id="fType">${[["all", "Tous les types"], ["operateur", "Opérateurs (dont les deux)"], ["ambassadeur", "Ambassadeurs (dont les deux)"], ["both", "Opérateur et ambassadeur"], ["none", "Type non renseigné"]].map(([v, l]) => `<option value="${v}" ${ui.fType === v ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+    <label class="field"><span>Type de partenaire</span><select id="fType">${[["all", "Tous les types"], ["operateur", "Opérateurs (dont les deux)"], ["ambassadeur", "Ambassadeurs (dont les deux)"], ["both", "Opérateur et ambassadeur"], ["reveil_operateur", "Réveil opérateur"], ["reveil_ambassadeur", "Réveil ambassadeur"], ["none", "Type non renseigné"]].map(([v, l]) => `<option value="${v}" ${ui.fType === v ? "selected" : ""}>${l}</option>`).join("")}</select></label>
     <label class="field"><span>Produit DFP</span><select id="fProd"><option value="all">Tous les produits</option>${catalog().map(v => `<option value="${esc(v)}" ${ui.fProd === v ? "selected" : ""}>${esc(v)}</option>`).join("")}<option value="none" ${ui.fProd === "none" ? "selected" : ""}>Produit non renseigné</option></select></label>
     ${filtersOn() ? `<button type="button" class="btn ghost" data-act="clearFilters" style="align-self:flex-end">Effacer les filtres</button>` : ""}`;
-  const filterNote = () => filtersOn() ? [ui.fType !== "all" ? ({ operateur: "opérateurs", ambassadeur: "ambassadeurs", both: "opérateurs et ambassadeurs", none: "type non renseigné" })[ui.fType] : "", ui.fProd === "none" ? "produit non renseigné" : ui.fProd !== "all" ? ui.fProd : ""].filter(Boolean).join(" · ") : "";
+  const filterNote = () => filtersOn() ? [ui.fType !== "all" ? ({ operateur: "opérateurs", ambassadeur: "ambassadeurs", both: "opérateurs et ambassadeurs", reveil_operateur: "réveil opérateur", reveil_ambassadeur: "réveil ambassadeur", none: "type non renseigné" })[ui.fType] : "", ui.fProd === "none" ? "produit non renseigné" : ui.fProd !== "all" ? ui.fProd : ""].filter(Boolean).join(" · ") : "";
   const DEFAULT_PRODUCTS = ["Accès internet", "Call2Teams", "Cloud", "Couverture GSM", "Couverture Wifi", "Dstny UCaaS", "Dstny Digital Assistant", "Mobile", "Phonio", "Services & Installation", "Téléphonie IP", "Téléphonie Standard", "VoIPcube"];
   const catalog = () => (Array.isArray(S.settings.products) && S.settings.products.length ? S.settings.products : DEFAULT_PRODUCTS);
   // products a partner sells (older entries kept a single "product" text)
@@ -518,10 +519,10 @@ form.stack { display: grid; gap: 12px; }
   const dupChip = (dups, p) => dups.has(p.id) ? ` <span class="chip warn" title="Un autre partenaire porte le même nom">Doublon ?</span>` : "";
   const delBtn = (p, icon) => `<button type="button" class="btn ghost danger del-btn${icon ? " icon" : ""}" data-delp="${p.id}" data-label="${icon ? "✕" : "Supprimer"}" aria-label="Supprimer ${esc(p.name)}" title="Supprimer cette ligne">${icon ? "✕" : "Supprimer"}</button>`;
   // partner type: operator, ambassador, or both
-  const PTYPES = [["operateur", "Opérateur"], ["ambassadeur", "Ambassadeur"], ["both", "Opérateur et ambassadeur"]];
+  const PTYPES = [["operateur", "Opérateur"], ["ambassadeur", "Ambassadeur"], ["both", "Opérateur et ambassadeur"], ["reveil_operateur", "Réveil opérateur"], ["reveil_ambassadeur", "Réveil ambassadeur"]];
   const ptypeLabel = t => (PTYPES.find(x => x[0] === t) || [])[1] || "";
   const ptypeOptions = (sel, empty) => `<option value="">${empty}</option>${PTYPES.map(([v, l]) => `<option value="${v}" ${v === sel ? "selected" : ""}>${l}</option>`).join("")}`;
-  const parsePtype = v => { const t = String(v ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim(); if (!t) return ""; const op = /op[ée]?r|operat/.test(t), am = /amb/.test(t); return /deux|both|\b2\b|les 2/.test(t) || (op && am) ? "both" : op ? "operateur" : am ? "ambassadeur" : ""; };
+  const parsePtype = v => { const t = String(v ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim(); if (!t) return ""; const op = /op[ée]?r|operat/.test(t), am = /amb/.test(t); if (/reveil/.test(t)) return am && !op ? "reveil_ambassadeur" : op ? "reveil_operateur" : ""; return /deux|both|\b2\b|les 2/.test(t) || (op && am) ? "both" : op ? "operateur" : am ? "ambassadeur" : ""; };
   const prods = p => Array.isArray(p.products) ? p.products : (p.product ? [p.product] : []);
   const prodBtn = (id, arr, ro, wide) => `<button type="button" class="prod-btn${wide ? " wide" : ""}${arr.length ? "" : " empty-v"}" data-pick="${id}" title="${esc(arr.join(", "))}" aria-label="Type de produit DFP : ${esc(arr.join(", ") || "aucun")}" ${ro ? "disabled" : ""}><span>${arr.length ? esc(arr.length <= 2 ? arr.join(", ") : arr.slice(0, 2).join(", ") + " +" + (arr.length - 2)) : '<span class="ph">À saisir</span>'}</span><span aria-hidden="true">▾</span></button>`;
 
@@ -650,7 +651,7 @@ form.stack { display: grid; gap: 12px; }
       <div class="kpis">
         <div class="kpi"><span class="label">MRR nouveaux partenaires</span><span class="v">${fmt(total)}</span>
           <span class="d">${esc(pLabel)}${ui.dashRep !== "all" ? " · " + esc(repName(ui.dashRep)) : ""}${filtersOn() ? ` · <b>filtre : ${esc(filterNote())}</b>` : ""}</span>
-          <span class="d">${(() => { const by = { operateur: 0, ambassadeur: 0, both: 0, "": 0 }; FP().filter(p => repIds.has(p.repId)).forEach(p => { by[p.ptype || ""] = (by[p.ptype || ""] || 0) + months.reduce((t, k) => t + mrrOf(p, k), 0); }); return `Opérateurs ${fmt(by.operateur)} · Ambassadeurs ${fmt(by.ambassadeur)} · Les deux ${fmt(by.both)}${by[""] ? ` · Non renseigné ${fmt(by[""])}` : ""}`; })()}</span></div>
+          <span class="d">${(() => { const by = { operateur: 0, ambassadeur: 0, both: 0, reveil_operateur: 0, reveil_ambassadeur: 0, "": 0 }; FP().filter(p => repIds.has(p.repId)).forEach(p => { by[p.ptype || ""] = (by[p.ptype || ""] || 0) + months.reduce((t, k) => t + mrrOf(p, k), 0); }); return `Opérateurs ${fmt(by.operateur)} · Ambassadeurs ${fmt(by.ambassadeur)} · Les deux ${fmt(by.both)} · Réveil opérateur ${fmt(by.reveil_operateur)} · Réveil ambassadeur ${fmt(by.reveil_ambassadeur)}${by[""] ? ` · Non renseigné ${fmt(by[""])}` : ""}`; })()}</span></div>
         <div class="kpi"><span class="label">Atteinte objectif à date</span><span class="v">${isFinite(ratio) ? pct(ratio) : "—"}</span>
           <span class="d">Objectif à date ${fmt(tgt)} ${chip(ratio)}</span>
           <div class="meter" aria-hidden="true"><i style="width:${Math.min(100, (ratio || 0) * 100)}%"></i></div></div>
