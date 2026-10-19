@@ -1022,10 +1022,10 @@ form.stack { display: grid; gap: 12px; }
     $("#modalRoot").innerHTML = `<div class="overlay" id="ov"><div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="dT">
       <h3 id="dT">${esc(p.name)} · ${esc(mLong(k))}</h3>
       <p class="sub">${esc(repName(p.repId))}${p.oip ? " · " + esc(p.oip) : ""} · total du mois <b>${fmt(v)}</b></p>
-      <div class="imp-tbl"><table class="t"><thead><tr><th>#</th><th>Référence</th><th>Date</th><th>Fichier</th><th class="n">Montant</th></tr></thead><tbody>
-        ${ls.map((l, i) => `<tr><td class="muted num">${i + 1}</td><td>${esc(l.ref || "—")}</td><td>${esc(l.d || "—")}</td><td class="muted">${esc(l.src || "")}</td><td class="n">${fmt(l.v)}</td></tr>`).join("")}
-        ${Math.abs(adj) >= 0.01 ? `<tr><td></td><td colspan="3"><span class="warnt">${ls.length ? "Écart avec le total (saisie ou correction manuelle)" : "Saisie manuelle, sans détail importé"}</span></td><td class="n">${signed(adj)}</td></tr>` : ""}
-      </tbody><tfoot><tr><td colspan="4">Total du mois</td><td class="n">${fmt(v)}</td></tr></tfoot></table></div>
+      <div class="imp-tbl"><table class="t"><thead><tr><th>#</th><th>Client</th><th>Référence</th><th>Date</th><th>Fichier</th><th class="n">Montant</th></tr></thead><tbody>
+        ${ls.map((l, i) => `<tr><td class="muted num">${i + 1}</td><td>${esc(l.cl || "—")}</td><td>${esc(l.ref || "—")}</td><td>${esc(l.d || "—")}</td><td class="muted">${esc(l.src || "")}</td><td class="n">${fmt(l.v)}</td></tr>`).join("")}
+        ${Math.abs(adj) >= 0.01 ? `<tr><td></td><td colspan="4"><span class="warnt">${ls.length ? "Écart avec le total (saisie ou correction manuelle)" : "Saisie manuelle, sans détail importé"}</span></td><td class="n">${signed(adj)}</td></tr>` : ""}
+      </tbody><tfoot><tr><td colspan="5">Total du mois</td><td class="n">${fmt(v)}</td></tr></tfoot></table></div>
       <div class="acts"><span></span><button type="button" class="btn primary" id="dClose">Fermer</button></div></div></div>`;
     const close = () => { $("#modalRoot").innerHTML = ""; };
     $("#dClose").onclick = close; $("#ov").addEventListener("click", e => { if (e.target.id === "ov") close(); });
@@ -1179,10 +1179,11 @@ form.stack { display: grid; gap: 12px; }
       imp.cols.oip = h.findIndex((_, i) => sample.filter(r => OIP_RE.test(String(r[i] ?? ""))).length >= Math.min(3, sample.length));
     }
     // otherwise the partner-name column
-    if (imp.cols.oip < 0) imp.cols.oip = h.findIndex(c => /partenaire|soci[ée]t[ée]|client|raison|compte|account|\bnom\b|^name$/.test(c) && !/day|jour|date|commercial/.test(c));
+    if (imp.cols.oip < 0) imp.cols.oip = h.findIndex(c => /partenaire|soci[ée]t[ée]|raison|compte|account|\bnom\b|^name$/.test(c) && !/day|jour|date|commercial|client/.test(c));
     imp.cols.amt = find(/mrr|montant|amount|ca\b|total|€/);
     imp.cols.rep = find(/commercia|vendeur|sales|owner|propri|responsable|charg/);
     imp.cols.ref = h.findIndex((c, i) => i !== imp.cols.oip && /oc_ref|r[ée]f|commande|order|contrat/.test(c));
+    imp.cols.client = h.findIndex((c, i) => i !== imp.cols.oip && /client|customer/.test(c));
     imp.cols.ptype = h.findIndex(c => /type/.test(c) && !/produit|product/.test(c));
     imp.cols.name = h.findIndex((c, i) => i !== imp.cols.oip && i !== imp.cols.rep && /partenaire|raison|soci[ée]t[ée]|client|enseigne|compte|account|nom|name/.test(c));
     imp.cols.month = find(imp.kind === "partners" ? /recrut|signature|cr[ée]ation|mois|date/ : /mois|month|p[ée]riode|date|day|jour/);
@@ -1221,7 +1222,7 @@ form.stack { display: grid; gap: 12px; }
       if (line.status === "ok") {
         const g = line.partner.id + "|" + line.month; groups.set(g, (groups.get(g) || 0) + line.amt);
         if (!glines.has(g)) glines.set(g, []);
-        glines.get(g).push([line.amt, imp.cols.ref >= 0 ? cellTxt(r[imp.cols.ref]) : "", imp.monthMode === "col" ? cellTxt(r[imp.cols.month]) : ""]);
+        if (line.amt) glines.get(g).push([line.amt, imp.cols.ref >= 0 ? cellTxt(r[imp.cols.ref]) : "", imp.monthMode === "col" ? cellTxt(r[imp.cols.month]) : "", imp.cols.client >= 0 ? cellTxt(r[imp.cols.client]) : ""]);
       }
     });
     const updates = [...groups].map(([g, sum]) => {
@@ -1400,7 +1401,7 @@ form.stack { display: grid; gap: 12px; }
     }
     for (const [pid, list] of det) {
       const lines = { ...(((S.details[pid] || {}).lines) || {}) };
-      list.forEach(u => { const fresh = u.lines.map(l => ({ v: l[0], ref: l[1], d: l[2], src: imp.file })); lines[u.month] = imp.mode === "add" ? [...(lines[u.month] || []), ...fresh] : fresh; });
+      list.forEach(u => { const fresh = u.lines.map(l => ({ v: l[0], ref: l[1], d: l[2], cl: l[3], src: imp.file })); lines[u.month] = imp.mode === "add" ? [...(lines[u.month] || []), ...fresh] : fresh; });
       try { await api.saveDetails(pid, lines); } catch {}
     }
     try { await api.saveSettings({ ...S.settings, lastImport: { at: Date.now(), file: imp.file, amounts: ups.length, rejected: imp.preview.rejected.length } }); } catch {}
