@@ -156,6 +156,8 @@ table.t th.cur, table.t td.cur { background: var(--teal-soft); }
 .rec-in { width: 140px; min-height: 32px !important; padding: 4px 6px !important; }
 .oip-in { width: 110px; min-height: 32px !important; padding: 4px 6px !important; }
 .oip-in:placeholder-shown { border-style: dashed; }
+.ptype-in { min-height: 32px !important; padding: 4px 6px !important; width: 190px; }
+.ptype-in.empty-v { border-style: dashed; color: var(--muted); }
 .prod-btn { display: inline-flex; align-items: center; justify-content: space-between; gap: 6px; width: 170px; min-height: 32px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); cursor: pointer; text-align: left; font-size: 13px; }
 .prod-btn.wide { width: 100%; min-height: 36px; }
 .prod-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
@@ -192,6 +194,11 @@ form.stack { display: grid; gap: 12px; }
 .strip i { width: 12px; height: 16px; border-radius: 2px; background: var(--surface-2); }
 .strip i.on { background: var(--teal); }
 .foot { margin: 0; font-size: 12px; color: var(--muted); text-align: center; }
+.upd { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 28px; background: var(--surface); border-radius: var(--r); box-shadow: var(--shadow); padding: 12px 18px; border-left: 4px solid var(--teal); }
+.upd > div { display: grid; gap: 2px; min-width: 0; }
+.upd .btn { margin-left: auto; }
+.pos { color: var(--good); }
+.neg { color: var(--bad); }
 .empty { padding: 28px 16px; text-align: center; color: var(--fg-2); display: grid; gap: 10px; justify-items: center; }
 .empty strong { color: var(--fg); font-size: 15px; }
 .row-actions { display: flex; gap: 2px; justify-content: flex-end; }
@@ -286,7 +293,7 @@ form.stack { display: grid; gap: 12px; }
   };
 
   // ---------- state ----------
-  const S = { reps: [], partners: [], settings: { monthlyTarget: 500 }, mode: "loading", canWrite: true, loaded: false, isAdmin: false, visits: null, names: {} };
+  const S = { reps: [], partners: [], settings: { monthlyTarget: 500 }, mode: "loading", canWrite: true, loaded: false, isAdmin: false, visits: null, names: {}, updates: [] };
   const prefs = safeLS.get("mrr-ui") || {};
   const ui = {
     bonusYear: now.getFullYear(),
@@ -301,6 +308,8 @@ form.stack { display: grid; gap: 12px; }
     partnerRep: "all",
     npProducts: [],
     teamYear: now.getFullYear(),
+    fType: "all",
+    fProd: "all",
     partnerQ: ""
   };
   const savePrefs = () => safeLS.set("mrr-ui", { tab: ui.tab, gran: ui.gran, entryRep: ui.entryRep });
@@ -333,11 +342,42 @@ form.stack { display: grid; gap: 12px; }
   }
   const LOCAL_KEY = "mrr-partenaires-data";
   const local = {
-    load() { const d = safeLS.get(LOCAL_KEY); if (d) { S.reps = d.reps || []; S.partners = d.partners || []; S.settings = d.settings || S.settings; } },
-    persist() { safeLS.set(LOCAL_KEY, { reps: S.reps, partners: S.partners, settings: S.settings }); }
+    load() { const d = safeLS.get(LOCAL_KEY); if (d) { S.reps = d.reps || []; S.partners = d.partners || []; S.settings = d.settings || S.settings; S.updates = d.updates || []; } },
+    persist() { safeLS.set(LOCAL_KEY, { reps: S.reps, partners: S.partners, settings: S.settings, updates: S.updates }); }
   };
   const strip = o => { const { id, ...rest } = o; return JSON.parse(JSON.stringify(rest)); };
   function upsertLocal(list, item) { const i = list.findIndex(x => x.id === item.id); if (i >= 0) list[i] = item; else list.push(item); }
+
+  // ---------- change log: one document per day listing every change ----------
+  const sumMrr = p => Object.values((p && p.mrr) || {}).reduce((t, v) => t + (+v || 0), 0);
+  function diffPartner(o, n) {
+    const at = Date.now(), base = p => ({ pid: p.id, n: p.name, r: p.repId, src: logSource, at });
+    if (!o && n) return [{ ...base(n), t: "add", v: cents(sumMrr(n)) }];
+    if (o && !n) return [{ ...base(o), t: "del", o: cents(sumMrr(o)) }];
+    const out = [], om = o.mrr || {}, nm = n.mrr || {};
+    for (const m of [...new Set([...Object.keys(om), ...Object.keys(nm)])].sort()) {
+      const a = om[m] ?? null, b = nm[m] ?? null;
+      if ((a === null ? null : +a) !== (b === null ? null : +b)) out.push({ ...base(n), t: "mrr", m, o: a === null ? null : +a, v: b === null ? null : +b });
+    }
+    if ((o.recruited || "") !== (n.recruited || "")) out.push({ ...base(n), t: "rec", o: o.recruited || "", v: n.recruited || "" });
+    if ((o.repId || "") !== (n.repId || "")) out.push({ ...base(n), t: "rep", o: o.repId || "", v: n.repId || "" });
+    for (const [f, label] of [["name", "Nom"], ["oip", "OIP"], ["ptype", "Type"]]) if ((o[f] || "") !== (n[f] || "")) out.push({ ...base(n), t: "info", f: label, o: f === "ptype" ? ptypeLabel(o[f]) : o[f] || "", v: f === "ptype" ? ptypeLabel(n[f]) : n[f] || "" });
+    if (prods(o).join("|") !== prods(n).join("|")) out.push({ ...base(n), t: "info", f: "Produits", o: prods(o).join(", "), v: prods(n).join(", ") });
+    return out;
+  }
+  let logSource = "Saisie", logQueue = [], logTimer = null;
+  function queueLog(changes) { if (!changes.length) return; logQueue.push(...changes); clearTimeout(logTimer); logTimer = setTimeout(flushLog, 1200); }
+  async function flushLog() {
+    if (!logQueue.length) return;
+    const batch = logQueue.splice(0), day = dayKey(new Date());
+    const prev = S.updates.find(u => u.id === day);
+    const changes = [...((prev && prev.changes) || []), ...batch].slice(-3000);
+    const doc = { at: Date.now(), changes };
+    try {
+      if (db) await db.doc("updates/" + day).set(doc);
+      else { upsertLocal(S.updates, { id: day, ...doc }); local.persist(); render(); }
+    } catch { logQueue.unshift(...batch); }
+  }
 
   const api = {
     async saveRep(r) {
@@ -349,11 +389,15 @@ form.stack { display: grid; gap: 12px; }
       S.reps = S.reps.filter(r => r.id !== id); local.persist(); render();
     },
     async savePartner(p) {
-      if (db) return db.collection("partners").doc(p.id).set(strip(p));
+      const old = S.partners.find(x => x.id === p.id), ch = diffPartner(old, p);
+      if (db) { await db.collection("partners").doc(p.id).set(strip(p)); queueLog(ch); return; }
+      queueLog(ch);
       upsertLocal(S.partners, p); local.persist(); render();
     },
     async deletePartner(id) {
-      if (db) return db.collection("partners").doc(id).delete();
+      const ch = diffPartner(S.partners.find(x => x.id === id), null);
+      if (db) { await db.collection("partners").doc(id).delete(); queueLog(ch); return; }
+      queueLog(ch);
       S.partners = S.partners.filter(p => p.id !== id); local.persist(); render();
     },
     async saveSettings(s) {
@@ -399,6 +443,7 @@ form.stack { display: grid; gap: 12px; }
     const onErr = () => { S.mode = "error"; render(); };
     db.collection("reps").onSnapshot(s => { S.reps = s.docs.map(d => ({ id: d.id, ...d.data() })); done("reps"); }, onErr);
     db.collection("partners").onSnapshot(s => { S.partners = s.docs.map(d => ({ id: d.id, ...d.data() })); done("partners"); }, onErr);
+    db.collection("updates").onSnapshot(s => { S.updates = s.docs.map(d => ({ id: d.id, ...d.data() })); render(); }, () => {});
     db.doc("settings/main").onSnapshot(s => { S.settings = s.exists ? { monthlyTarget: 500, ...s.data() } : { monthlyTarget: 500 }; done("settings"); }, onErr);
   }
   function startLocal() { S.mode = "local"; S.isAdmin = true; S.visits = []; local.load(); S.loaded = true; render(); }
@@ -410,9 +455,43 @@ form.stack { display: grid; gap: 12px; }
   const target = () => +S.settings.monthlyTarget || 0;
   // objective per salesperson for a given month: month override, else the default
   const targetFor = k => { const o = (S.settings.targets || {})[k]; return o === undefined || o === null ? target() : +o || 0; };
-  const lastUpdate = () => Math.max(0, +S.settings.updatedAt || 0, ...S.partners.map(p => +p.updatedAt || +p.createdAt || 0));
+  const sortedUpdates = () => [...S.updates].filter(u => u.changes && u.changes.length).sort((a, b) => b.id.localeCompare(a.id));
+  const lastUpdate = () => { const u = sortedUpdates()[0]; return u ? +u.at : Math.max(0, +S.settings.updatedAt || 0, ...S.partners.map(p => +p.updatedAt || +p.createdAt || 0)); };
+  // net effect of one day's changes
+  function summarize(changes) {
+    const sm = { mrr: 0, cells: 0, add: 0, del: 0, other: 0, byRep: {} };
+    for (const c of changes) {
+      let d = 0;
+      if (c.t === "mrr") { d = (+c.v || 0) - (+c.o || 0); sm.cells++; }
+      else if (c.t === "add") { d = +c.v || 0; sm.add++; }
+      else if (c.t === "del") { d = -(+c.o || 0); sm.del++; }
+      else sm.other++;
+      sm.mrr += d; if (d) sm.byRep[c.r] = (sm.byRep[c.r] || 0) + d;
+    }
+    return sm;
+  }
+  const signed = v => (v > 0 ? "+" : v < 0 ? "−" : "") + fmt(Math.abs(v));
+  const fmtDay = (id, long) => new Date(id + "T12:00:00").toLocaleDateString("fr-FR", long ? { weekday: "long", day: "numeric", month: "long", year: "numeric" } : { day: "numeric", month: "long" });
   const sumTargets = ks => ks.reduce((t, k) => t + targetFor(k), 0);
   const mrrOf = (p, k) => +((p.mrr || {})[k]) || 0;
+  // partners kept by the dashboard filters (partner type, product)
+  const passFilters = p => {
+    const t = p.ptype || "";
+    if (ui.fType === "operateur" && t !== "operateur" && t !== "both") return false;
+    if (ui.fType === "ambassadeur" && t !== "ambassadeur" && t !== "both") return false;
+    if (ui.fType === "both" && t !== "both") return false;
+    if (ui.fType === "none" && t) return false;
+    if (ui.fProd === "none" && prods(p).length) return false;
+    if (ui.fProd !== "all" && ui.fProd !== "none" && !prods(p).includes(ui.fProd)) return false;
+    return true;
+  };
+  const FP = () => S.partners.filter(passFilters);
+  const filtersOn = () => ui.fType !== "all" || ui.fProd !== "all";
+  const filterFields = () => `
+    <label class="field"><span>Type de partenaire</span><select id="fType">${[["all", "Tous les types"], ["operateur", "Opérateurs (dont les deux)"], ["ambassadeur", "Ambassadeurs (dont les deux)"], ["both", "Opérateur et ambassadeur"], ["none", "Type non renseigné"]].map(([v, l]) => `<option value="${v}" ${ui.fType === v ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+    <label class="field"><span>Produit DFP</span><select id="fProd"><option value="all">Tous les produits</option>${catalog().map(v => `<option value="${esc(v)}" ${ui.fProd === v ? "selected" : ""}>${esc(v)}</option>`).join("")}<option value="none" ${ui.fProd === "none" ? "selected" : ""}>Produit non renseigné</option></select></label>
+    ${filtersOn() ? `<button type="button" class="btn ghost" data-act="clearFilters" style="align-self:flex-end">Effacer les filtres</button>` : ""}`;
+  const filterNote = () => filtersOn() ? [ui.fType !== "all" ? ({ operateur: "opérateurs", ambassadeur: "ambassadeurs", both: "opérateurs et ambassadeurs", none: "type non renseigné" })[ui.fType] : "", ui.fProd === "none" ? "produit non renseigné" : ui.fProd !== "all" ? ui.fProd : ""].filter(Boolean).join(" · ") : "";
   const DEFAULT_PRODUCTS = ["Accès internet", "Call2Teams", "Cloud", "Couverture GSM", "Couverture Wifi", "Dstny UCaaS", "Dstny Digital Assistant", "Mobile", "Phonio", "Services & Installation", "Téléphonie IP", "Téléphonie Standard", "VoIPcube"];
   const catalog = () => (Array.isArray(S.settings.products) && S.settings.products.length ? S.settings.products : DEFAULT_PRODUCTS);
   // products a partner sells (older entries kept a single "product" text)
@@ -422,6 +501,11 @@ form.stack { display: grid; gap: 12px; }
   const dupIds = () => { const c = {}; S.partners.forEach(p => { const k = normName(p.name); c[k] = (c[k] || 0) + 1; }); return new Set(S.partners.filter(p => c[normName(p.name)] > 1).map(p => p.id)); };
   const dupChip = (dups, p) => dups.has(p.id) ? ` <span class="chip warn" title="Un autre partenaire porte le même nom">Doublon ?</span>` : "";
   const delBtn = (p, icon) => `<button type="button" class="btn ghost danger del-btn${icon ? " icon" : ""}" data-delp="${p.id}" data-label="${icon ? "✕" : "Supprimer"}" aria-label="Supprimer ${esc(p.name)}" title="Supprimer cette ligne">${icon ? "✕" : "Supprimer"}</button>`;
+  // partner type: operator, ambassador, or both
+  const PTYPES = [["operateur", "Opérateur"], ["ambassadeur", "Ambassadeur"], ["both", "Opérateur et ambassadeur"]];
+  const ptypeLabel = t => (PTYPES.find(x => x[0] === t) || [])[1] || "";
+  const ptypeOptions = (sel, empty) => `<option value="">${empty}</option>${PTYPES.map(([v, l]) => `<option value="${v}" ${v === sel ? "selected" : ""}>${l}</option>`).join("")}`;
+  const parsePtype = v => { const t = String(v ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim(); if (!t) return ""; const op = /op[ée]?r|operat/.test(t), am = /amb/.test(t); return /deux|both|\b2\b|les 2/.test(t) || (op && am) ? "both" : op ? "operateur" : am ? "ambassadeur" : ""; };
   const prods = p => Array.isArray(p.products) ? p.products : (p.product ? [p.product] : []);
   const prodBtn = (id, arr, ro, wide) => `<button type="button" class="prod-btn${wide ? " wide" : ""}${arr.length ? "" : " empty-v"}" data-pick="${id}" title="${esc(arr.join(", "))}" aria-label="Type de produit DFP : ${esc(arr.join(", ") || "aucun")}" ${ro ? "disabled" : ""}><span>${arr.length ? esc(arr.length <= 2 ? arr.join(", ") : arr.slice(0, 2).join(", ") + " +" + (arr.length - 2)) : '<span class="ph">À saisir</span>'}</span><span aria-hidden="true">▾</span></button>`;
 
@@ -458,14 +542,14 @@ form.stack { display: grid; gap: 12px; }
   // Reps shown in the dashboard: active ones, plus inactive ones that produced MRR in the window
   function scopeReps(months) {
     const set = new Set(months);
-    const withMrr = new Set(S.partners.filter(p => months.some(k => mrrOf(p, k) > 0)).map(p => p.repId));
+    const withMrr = new Set(FP().filter(p => months.some(k => mrrOf(p, k) > 0)).map(p => p.repId));
     let reps = sortedReps().filter(r => r.active !== false || withMrr.has(r.id));
     if (ui.dashRep !== "all") reps = reps.filter(r => r.id === ui.dashRep);
     return reps;
   }
   function repStats(rep, months) {
     const elapsed = months.filter(k => k <= CUR);
-    const ps = S.partners.filter(p => p.repId === rep.id);
+    const ps = FP().filter(p => p.repId === rep.id);
     const mrr = ps.reduce((s, p) => s + months.reduce((t, k) => t + mrrOf(p, k), 0), 0);
     const recruited = ps.filter(p => p.recruited && months.includes(p.recruited)).length;
     const tgt = rep.active === false ? 0 : sumTargets(elapsed);
@@ -480,7 +564,7 @@ form.stack { display: grid; gap: 12px; }
     $("#tab-visits").hidden = !S.isAdmin;
     if (ui.tab === "visits" && !S.isAdmin && S.mode !== "loading") ui.tab = "dash";
     $$(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.tab === ui.tab)));
-    ["dash", "bonus", "entry", "partners", "team", "visits"].forEach(v => { $("#view-" + v).hidden = v !== ui.tab; });
+    ["dash", "bonus", "entry", "partners", "team", "visits"].forEach(v => { const el = $("#view-" + v); el.hidden = v !== ui.tab; if (el.hidden) el.innerHTML = ""; });
     renderBanner();
     if (ui.tab === "dash") renderDash();
     if (ui.tab === "entry") renderEntry();
@@ -521,7 +605,7 @@ form.stack { display: grid; gap: 12px; }
     const tgt = stats.reduce((s, x) => s + x.tgt, 0);
     const fullTgt = reps.filter(r => r.active !== false).length * sumTargets(months);
     const recruited = stats.reduce((s, x) => s + x.recruited, 0);
-    const activeP = S.partners.filter(p => repIds.has(p.repId) && months.some(k => mrrOf(p, k) > 0)).length;
+    const activeP = FP().filter(p => repIds.has(p.repId) && months.some(k => mrrOf(p, k) > 0)).length;
     const ratio = tgt ? total / tgt : NaN;
     const perRepMonth = reps.length && elapsed.length ? total / (stats.filter(s => s.tgt).length || 1) / elapsed.length : 0;
     const remaining = Math.max(0, fullTgt - total);
@@ -529,6 +613,7 @@ form.stack { display: grid; gap: 12px; }
 
     el.innerHTML = `
       <div style="display:grid;gap:20px">
+      ${updateStrip()}
       <div class="filters">
         <div class="field"><span>Période</span>
           <div class="seg" role="group" aria-label="Granularité">
@@ -539,13 +624,15 @@ form.stack { display: grid; gap: 12px; }
           <select id="periodSel">${opts.map(([v, l]) => `<option value="${v}" ${v === ui.period ? "selected" : ""}>${l}</option>`).join("")}</select></label>` : ""}
         <label class="field"><span>Commercial</span>
           <select id="dashRep"><option value="all">Toute l'équipe</option>${sortedReps().map(r => `<option value="${r.id}" ${ui.dashRep === r.id ? "selected" : ""}>${esc(r.name)}${r.active === false ? " (inactif)" : ""}</option>`).join("")}</select></label>
+        ${filterFields()}
         <div style="flex:1"></div>
         <button class="btn" data-act="export">Exporter en CSV</button>
       </div>
 
       <div class="kpis">
         <div class="kpi"><span class="label">MRR nouveaux partenaires</span><span class="v">${fmt(total)}</span>
-          <span class="d">${esc(pLabel)}${ui.dashRep !== "all" ? " · " + esc(repName(ui.dashRep)) : ""}</span></div>
+          <span class="d">${esc(pLabel)}${ui.dashRep !== "all" ? " · " + esc(repName(ui.dashRep)) : ""}${filtersOn() ? ` · <b>filtre : ${esc(filterNote())}</b>` : ""}</span>
+          <span class="d">${(() => { const by = { operateur: 0, ambassadeur: 0, both: 0, "": 0 }; FP().filter(p => repIds.has(p.repId)).forEach(p => { by[p.ptype || ""] = (by[p.ptype || ""] || 0) + months.reduce((t, k) => t + mrrOf(p, k), 0); }); return `Opérateurs ${fmt(by.operateur)} · Ambassadeurs ${fmt(by.ambassadeur)} · Les deux ${fmt(by.both)}${by[""] ? ` · Non renseigné ${fmt(by[""])}` : ""}`; })()}</span></div>
         <div class="kpi"><span class="label">Atteinte objectif à date</span><span class="v">${isFinite(ratio) ? pct(ratio) : "—"}</span>
           <span class="d">Objectif à date ${fmt(tgt)} ${chip(ratio)}</span>
           <div class="meter" aria-hidden="true"><i style="width:${Math.min(100, (ratio || 0) * 100)}%"></i></div></div>
@@ -617,7 +704,7 @@ form.stack { display: grid; gap: 12px; }
     if (!box) return;
     const ctx = contextMonths(months);
     const ids = new Set(reps.map(r => r.id));
-    const vals = ctx.map(k => S.partners.filter(p => ids.has(p.repId)).reduce((s, p) => s + mrrOf(p, k), 0));
+    const vals = ctx.map(k => FP().filter(p => ids.has(p.repId)).reduce((s, p) => s + mrrOf(p, k), 0));
     const nAct = reps.filter(r => r.active !== false).length;
     const tl = ctx.map(k => targetFor(k) * nAct);
     const W = 620, H = 260, L = 52, R = 8, T = 14, B = 28;
@@ -657,13 +744,13 @@ form.stack { display: grid; gap: 12px; }
     const ctx = contextMonths(months);
     const sel = new Set(months);
     const rows = reps.map(r => {
-      const ps = S.partners.filter(p => p.repId === r.id);
+      const ps = FP().filter(p => p.repId === r.id);
       const vals = ctx.map(k => ps.reduce((s, p) => s + mrrOf(p, k), 0));
       const tot = vals.reduce((a, b) => a + b, 0);
       const t = r.active === false ? 0 : sumTargets(ctx.filter(k => k <= CUR));
       return `<tr><td style="white-space:nowrap">${esc(r.name)}</td>${vals.map((v, i) => `<td class="n ${v ? "" : "zero"} ${sel.has(ctx[i]) ? "cur" : ""}">${ctx[i] > CUR ? "" : v ? fmt(v) : "–"}</td>`).join("")}<td class="n"><b>${fmt(tot)}</b></td><td class="n">${chip(t ? tot / t : NaN)}</td></tr>`;
     }).join("");
-    const colTot = ctx.map(k => S.partners.filter(p => reps.some(r => r.id === p.repId)).reduce((s, p) => s + mrrOf(p, k), 0));
+    const colTot = ctx.map(k => FP().filter(p => reps.some(r => r.id === p.repId)).reduce((s, p) => s + mrrOf(p, k), 0));
     const all = colTot.reduce((a, b) => a + b, 0);
     return `<table class="t"><thead><tr><th>Commercial</th>${ctx.map(k => `<th class="n ${sel.has(k) ? "cur" : ""}">${ctx.length > 12 ? mLabel(k) : MONTHS[mOf(k) - 1]}</th>`).join("")}<th class="n">Total</th><th class="n">Atteinte</th></tr></thead>
       <tbody>${rows}</tbody>
@@ -671,7 +758,7 @@ form.stack { display: grid; gap: 12px; }
   }
 
   function topPartners(months, repIds) {
-    const list = S.partners.filter(p => repIds.has(p.repId)).map(p => ({ p, v: months.reduce((s, k) => s + mrrOf(p, k), 0) })).filter(x => x.v > 0).sort((a, b) => b.v - a.v).slice(0, 8);
+    const list = FP().filter(p => repIds.has(p.repId)).map(p => ({ p, v: months.reduce((s, k) => s + mrrOf(p, k), 0) })).filter(x => x.v > 0).sort((a, b) => b.v - a.v).slice(0, 8);
     if (!list.length) return `<div class="empty">Aucun MRR saisi sur cette période.</div>`;
     return `<div class="tbl-wrap"><table class="t"><thead><tr><th>Partenaire</th><th>Commercial</th><th class="n">MRR</th></tr></thead><tbody>
       ${list.map(x => `<tr><td>${esc(x.p.name)}</td><td class="muted">${esc(repName(x.p.repId))}</td><td class="n"><b>${fmt(x.v)}</b></td></tr>`).join("")}</tbody></table></div>`;
@@ -694,7 +781,7 @@ form.stack { display: grid; gap: 12px; }
     const ps = S.partners
       .filter(p => ui.entryRep === "all" || p.repId === ui.entryRep)
       .filter(p => !p.recruited || yOf(p.recruited) <= y)
-      .filter(p => !q || p.name.toLowerCase().includes(q) || (p.oip || "").toLowerCase().includes(q) || prods(p).join(" ").toLowerCase().includes(q))
+      .filter(p => !q || p.name.toLowerCase().includes(q) || (p.oip || "").toLowerCase().includes(q) || prods(p).join(" ").toLowerCase().includes(q) || ptypeLabel(p.ptype).toLowerCase().includes(q))
       .sort((a, b) => (a.recruited || "").localeCompare(b.recruited || "") || a.name.localeCompare(b.name, "fr"));
     const ro = !S.canWrite;
     const colTot = months.map(k => ps.reduce((t, p) => t + mrrOf(p, k), 0));
@@ -712,6 +799,7 @@ form.stack { display: grid; gap: 12px; }
           <label class="field" style="flex:1 1 160px"><span>Commercial</span><select id="np-rep" required ${ro ? "disabled" : ""}>${activeReps().map(r => `<option value="${r.id}" ${ui.entryRep === r.id ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select></label>
           <label class="field" style="flex:1 1 150px"><span>Mois de recrutement</span><input type="month" id="np-month" value="${CUR}" max="${CUR}" required ${ro ? "disabled" : ""}></label>
           <label class="field" style="flex:1 1 130px"><span>OIP (facultatif)</span><input type="text" id="np-oip" maxlength="60" placeholder="N° OIP" ${ro ? "disabled" : ""}></label>
+          <label class="field" style="flex:1 1 170px"><span>Type de partenaire</span><select id="np-type" ${ro ? "disabled" : ""}>${ptypeOptions("", "— À préciser —")}</select></label>
           <div class="field" style="flex:1 1 170px"><span>Type de produit DFP</span>${prodBtn("new", ui.npProducts, ro, true)}</div>
           <button class="btn primary" type="submit" ${ro ? "disabled" : ""}>Ajouter le partenaire</button>
         </form>
@@ -731,12 +819,13 @@ form.stack { display: grid; gap: 12px; }
         </div>
         ${nDup ? `<div class="banner" style="margin-bottom:12px"><span><b>${nDup} lignes</b> portent le même nom qu'un autre partenaire (marquées « Doublon ? »). Vérifiez-les et supprimez celles en trop.</span></div>` : ""}
         ${ps.length ? `<div class="tbl-wrap grid-wrap" id="entryTable"><table class="t grid">
-          <thead><tr><th class="sticky">Partenaire</th><th>Recruté le</th><th>OIP</th><th>Type de produit DFP</th>${months.map(k => `<th class="n ${k === CUR ? "cur" : ""}">${MONTHS[mOf(k) - 1]}</th>`).join("")}<th class="n">Total ${y}</th></tr></thead>
+          <thead><tr><th class="sticky">Partenaire</th><th>Recruté le</th><th>OIP</th><th>Type</th><th>Type de produit DFP</th>${months.map(k => `<th class="n ${k === CUR ? "cur" : ""}">${MONTHS[mOf(k) - 1]}</th>`).join("")}<th class="n">Total ${y}</th></tr></thead>
           <tbody>${ps.map(p => {
             const tot = months.reduce((t, k) => t + mrrOf(p, k), 0);
             return `<tr><td class="sticky"><div class="name-cell"><div><b>${esc(p.name)}</b>${dupChip(dups, p)}<small>${esc(repName(p.repId))}</small></div>${ro ? "" : delBtn(p, true)}</div></td>
               <td><input class="rec-in" type="month" data-pid="${p.id}" value="${p.recruited || ""}" max="${CUR}" aria-label="Mois de recrutement ${esc(p.name)}" ${ro ? "disabled" : ""}></td>
               <td><input class="oip-in" type="text" data-pid="${p.id}" value="${esc(p.oip || "")}" maxlength="60" placeholder="À saisir" aria-label="OIP ${esc(p.name)}" ${ro ? "disabled" : ""}></td>
+              <td><select class="ptype-in${p.ptype ? "" : " empty-v"}" data-pid="${p.id}" aria-label="Type de partenaire ${esc(p.name)}" ${ro ? "disabled" : ""}>${ptypeOptions(p.ptype || "", "À préciser")}</select></td>
               <td>${prodBtn(p.id, prods(p), ro)}</td>
               ${months.map(k => {
                 const before = p.recruited && k < p.recruited;
@@ -747,7 +836,7 @@ form.stack { display: grid; gap: 12px; }
               }).join("")}
               <td class="n"><b>${fmt(tot)}</b></td></tr>`;
           }).join("")}</tbody>
-          <tfoot><tr><td class="sticky">Total</td><td></td><td></td><td></td>${colTot.map((v, i) => `<td class="n ${months[i] === CUR ? "cur" : ""}">${months[i] > CUR ? "" : fmt(v)}</td>`).join("")}<td class="n">${fmt(yearTot)}</td></tr></tfoot>
+          <tfoot><tr><td class="sticky">Total</td><td></td><td></td><td></td><td></td>${colTot.map((v, i) => `<td class="n ${months[i] === CUR ? "cur" : ""}">${months[i] > CUR ? "" : fmt(v)}</td>`).join("")}<td class="n">${fmt(yearTot)}</td></tr></tfoot>
         </table></div>`
           : `<div class="empty"><strong>Aucun partenaire à afficher</strong><span>${S.partners.length ? "Changez l'année, le commercial ou la recherche." : "Ajoutez votre premier partenaire avec le formulaire ci-dessus."}</span></div>`}
       </div>
@@ -779,16 +868,56 @@ form.stack { display: grid; gap: 12px; }
           <label class="field"><span>Rechercher</span><input type="text" id="pq" value="${esc(ui.partnerQ)}" placeholder="Nom du partenaire"></label>
           <label class="field"><span>Commercial</span><select id="pRep"><option value="all">Tous</option>${sortedReps().map(r => `<option value="${r.id}" ${ui.partnerRep === r.id ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select></label>
         </div></div>
-      ${ps.length ? `<div class="tbl-wrap"><table class="t"><thead><tr><th>Partenaire</th><th>OIP</th><th>Type de produit DFP</th><th>Commercial</th><th>Recruté</th><th class="n">Mois saisis</th><th class="n">MRR cumulé</th><th class="n">Dernier mois</th><th></th></tr></thead><tbody>
+      ${ps.length ? `<div class="tbl-wrap"><table class="t"><thead><tr><th>Partenaire</th><th>OIP</th><th>Type</th><th>Type de produit DFP</th><th>Commercial</th><th>Recruté</th><th class="n">Mois saisis</th><th class="n">MRR cumulé</th><th class="n">Dernier mois</th><th></th></tr></thead><tbody>
         ${ps.map(p => {
           const ks = Object.keys(p.mrr || {}).filter(k => mrrOf(p, k) > 0).sort();
           const last = ks[ks.length - 1];
           const cum = ks.reduce((s, k) => s + mrrOf(p, k), 0);
-          return `<tr><td><b>${esc(p.name)}</b>${dupChip(dups, p)}</td><td class="${p.oip ? "" : "muted"}">${p.oip ? esc(p.oip) : "—"}</td><td class="${prods(p).length ? "" : "muted"}">${prods(p).length ? esc(prods(p).join(", ")) : "—"}</td><td>${esc(repName(p.repId))}</td><td class="num">${p.recruited ? mLong(p.recruited) : "—"}</td><td class="n">${ks.length}</td><td class="n"><b>${fmt(cum)}</b></td><td class="n muted">${last ? mLabel(last) + " · " + fmt(mrrOf(p, last)) : "—"}</td>
+          return `<tr><td><b>${esc(p.name)}</b>${dupChip(dups, p)}</td><td class="${p.oip ? "" : "muted"}">${p.oip ? esc(p.oip) : "—"}</td><td class="${p.ptype ? "" : "muted"}">${p.ptype ? esc(ptypeLabel(p.ptype)) : "—"}</td><td class="${prods(p).length ? "" : "muted"}">${prods(p).length ? esc(prods(p).join(", ")) : "—"}</td><td>${esc(repName(p.repId))}</td><td class="num">${p.recruited ? mLong(p.recruited) : "—"}</td><td class="n">${ks.length}</td><td class="n"><b>${fmt(cum)}</b></td><td class="n muted">${last ? mLabel(last) + " · " + fmt(mrrOf(p, last)) : "—"}</td>
             <td class="n"><div class="row-actions">${ro ? "" : `<button class="btn ghost" data-edit="${p.id}">Modifier</button>${delBtn(p)}`}</div></td></tr>`;
         }).join("")}</tbody></table></div>`
         : `<div class="empty"><strong>Aucun partenaire trouvé</strong><span>${S.partners.length ? "Modifiez la recherche ou le filtre." : "Ajoutez votre premier partenaire depuis l'onglet « Saisie MRR »."}</span>${!S.partners.length && !ro ? `<button class="btn primary" data-goto="entry">Ajouter un partenaire</button>` : ""}</div>`}
     </div>`;
+  }
+
+  // ----- Last update & changes -----
+  function updateStrip() {
+    const ups = sortedUpdates();
+    if (!ups.length) return `<div class="upd"><div><span class="label">Dernière mise à jour</span><b>${lastUpdate() ? new Date(lastUpdate()).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) : "—"}</b></div><span class="muted">Le détail des changements s'affichera à partir de la prochaine mise à jour.</span></div>`;
+    const u = ups[0], sm = summarize(u.changes), prev = ups[1];
+    const bits = [sm.cells ? `${sm.cells} montant${sm.cells > 1 ? "s" : ""} modifié${sm.cells > 1 ? "s" : ""}` : "", sm.add ? `${sm.add} partenaire${sm.add > 1 ? "s" : ""} ajouté${sm.add > 1 ? "s" : ""}` : "", sm.del ? `${sm.del} supprimé${sm.del > 1 ? "s" : ""}` : "", sm.other ? `${sm.other} autre${sm.other > 1 ? "s" : ""} modification${sm.other > 1 ? "s" : ""}` : ""].filter(Boolean);
+    return `<div class="upd">
+      <div><span class="label">Dernière mise à jour</span><b>${new Date(u.at).toLocaleString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}</b></div>
+      <div><span class="label">Changements${prev ? " depuis le " + fmtDay(prev.id) : ""}</span><span><b class="${sm.mrr > 0 ? "pos" : sm.mrr < 0 ? "neg" : ""}">${signed(sm.mrr)} de MRR</b> · ${bits.join(" · ") || "aucun montant modifié"}</span></div>
+      <button class="btn" data-act="changes">Voir le détail</button>
+    </div>`;
+  }
+  function openChanges(day) {
+    const ups = sortedUpdates();
+    if (!ups.length) return;
+    const u = ups.find(x => x.id === day) || ups[0], sm = summarize(u.changes);
+    const what = c => c.t === "mrr" ? `MRR ${esc(mLong(c.m))}` : c.t === "add" ? "Nouveau partenaire" : c.t === "del" ? "Partenaire supprimé" : c.t === "rec" ? "Mois de recrutement" : c.t === "rep" ? "Commercial" : esc(c.f || "Modification");
+    const val = (c, k) => { const x = c[k]; if (c.t === "mrr" || c.t === "add" || c.t === "del") return x === null || x === undefined ? "—" : fmt(x); if (c.t === "rec") return x ? esc(mLong(x)) : "—"; if (c.t === "rep") return x ? esc(repName(x)) : "—"; return x ? esc(x) : "—"; };
+    const delta = c => c.t === "mrr" ? (+c.v || 0) - (+c.o || 0) : c.t === "add" ? +c.v || 0 : c.t === "del" ? -(+c.o || 0) : 0;
+    const list = [...u.changes].sort((a, b) => repName(a.r).localeCompare(repName(b.r), "fr") || a.n.localeCompare(b.n, "fr") || (a.m || "").localeCompare(b.m || ""));
+    const reps = Object.entries(sm.byRep).sort((a, b) => b[1] - a[1]);
+    $("#modalRoot").innerHTML = `<div class="overlay" id="ov"><div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="chT">
+      <h3 id="chT">Changements du ${esc(fmtDay(u.id, true))}</h3>
+      <div class="filters" style="margin-bottom:12px">
+        <label class="field"><span>Mise à jour</span><select id="chDay">${ups.map(x => `<option value="${x.id}" ${x.id === u.id ? "selected" : ""}>${esc(fmtDay(x.id, true))} · ${x.changes.length} changement${x.changes.length > 1 ? "s" : ""}</option>`).join("")}</select></label>
+        <div class="field"><span>Effet sur le MRR</span><b class="num ${sm.mrr > 0 ? "pos" : sm.mrr < 0 ? "neg" : ""}" style="font-size:18px;line-height:36px">${signed(sm.mrr)}</b></div>
+      </div>
+      ${reps.length ? `<div class="imp-sum">${reps.map(([r, d]) => `<span class="chip ${d > 0 ? "good" : "bad"}">${esc(repName(r))} ${signed(d)}</span>`).join("")}</div>` : ""}
+      <div class="imp-tbl"><table class="t"><thead><tr><th>Partenaire</th><th>Commercial</th><th>Changement</th><th class="n">Avant</th><th class="n">Après</th><th class="n">Écart</th><th>Source</th></tr></thead><tbody>
+        ${list.map(c => { const d = delta(c); return `<tr><td><b>${esc(c.n)}</b></td><td class="muted">${esc(repName(c.r))}</td><td>${what(c)}</td><td class="n">${val(c, "o")}</td><td class="n">${val(c, "v")}</td><td class="n ${d > 0 ? "pos" : d < 0 ? "neg" : ""}">${d ? signed(d) : ""}</td><td class="muted" style="white-space:nowrap">${esc(c.src || "")} · ${c.at ? new Date(c.at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : ""}</td></tr>`; }).join("")}
+      </tbody></table></div>
+      <div class="acts"><span class="muted" style="font-size:12px">Écart = effet du changement sur le MRR total.</span><button type="button" class="btn primary" id="chClose">Fermer</button></div>
+    </div></div>`;
+    const close = () => { $("#modalRoot").innerHTML = ""; };
+    $("#chClose").onclick = close;
+    $("#ov").addEventListener("click", e => { if (e.target.id === "ov") close(); });
+    $("#ov").addEventListener("keydown", e => { if (e.key === "Escape") close(); });
+    $("#chDay").addEventListener("change", e => openChanges(e.target.value));
   }
 
   // ----- Bonus tracking -----
@@ -802,12 +931,12 @@ form.stack { display: grid; gap: 12px; }
     const all = range(ym(y, 1), ym(y, 12));
     // columns: months, or quarters (3 months each)
     const cols = q ? [1, 2, 3, 4].map(n => ({ label: `T${n}`, months: all.slice(n * 3 - 3, n * 3) })) : all.map(k => ({ label: MONTHS[mOf(k) - 1], months: [k] }));
-    const reps = sortedReps().filter(r => r.active !== false || S.partners.some(p => p.repId === r.id && all.some(k => mrrOf(p, k) > 0)));
+    const reps = sortedReps().filter(r => r.active !== false || FP().some(p => p.repId === r.id && all.some(k => mrrOf(p, k) > 0)));
     const curCol = cols.findIndex(c => c.months.includes(CUR));
     const cell = (r, c) => {
       const el = c.months.filter(k => k <= CUR);
       if (!el.length) return `<td class="n zero">—</td>`;
-      const mrr = S.partners.filter(p => p.repId === r.id).reduce((t, p) => t + c.months.reduce((u, k) => u + mrrOf(p, k), 0), 0);
+      const mrr = FP().filter(p => p.repId === r.id).reduce((t, p) => t + c.months.reduce((u, k) => u + mrrOf(p, k), 0), 0);
       const tgt = r.active === false ? 0 : sumTargets(c.months);
       const open = c.months.some(k => k >= CUR);
       const ratio = tgt ? mrr / tgt : NaN;
@@ -820,13 +949,14 @@ form.stack { display: grid; gap: 12px; }
         <p class="sub" style="margin:0">Nouveau MRR généré ${q ? "chaque trimestre" : "chaque mois"} par les partenaires recrutés de chaque commercial, comparé à son objectif ${q ? "trimestriel" : "mensuel"}. ${lastUpdate() ? "Données à jour au " + new Date(lastUpdate()).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) + "." : ""}</p></div>
         <div class="filters">
           <div class="field"><span>Vue</span><div class="seg" role="group" aria-label="Vue">${[["month", "Mois"], ["quarter", "Trimestres"]].map(([g, l]) => `<button data-bgran="${g}" aria-pressed="${ui.bonusGran === g}">${l}</button>`).join("")}</div></div>
+          ${filterFields()}
           <label class="field"><span>Année</span><select id="bonusYear">${years.map(yy => `<option value="${yy}" ${yy === y ? "selected" : ""}>${yy}</option>`).join("")}</select></label>
         </div>
       </div>
       <div class="tbl-wrap"><table class="t b-table">
         <thead><tr><th>Commercial</th>${cols.map((c, i) => `<th class="n ${i === curCol ? "cur" : ""}">${c.label}<small>obj. ${fmt(sumTargets(c.months))}</small></th>`).join("")}<th class="n">Cumul ${y}<small>obj. à date ${fmt(sumTargets(yearEl))}</small></th></tr></thead>
         <tbody>${reps.map(r => {
-          const mrr = S.partners.filter(p => p.repId === r.id).reduce((t, p) => t + yearEl.reduce((u, k) => u + mrrOf(p, k), 0), 0);
+          const mrr = FP().filter(p => p.repId === r.id).reduce((t, p) => t + yearEl.reduce((u, k) => u + mrrOf(p, k), 0), 0);
           const tgt = r.active === false ? 0 : sumTargets(yearEl);
           return `<tr><td style="white-space:nowrap"><b>${esc(r.name)}</b>${r.active === false ? ' <span class="muted">(inactif)</span>' : ""}</td>${cols.map(c => cell(r, c)).join("")}<td class="n b-cell"><b>${fmt(mrr)}</b>${tgt ? chip(mrr / tgt) : ""}</td></tr>`;
         }).join("")}</tbody>
@@ -982,6 +1112,7 @@ form.stack { display: grid; gap: 12px; }
     }
     imp.cols.amt = find(/mrr|montant|amount|ca\b|total|€/);
     imp.cols.rep = find(/commercia|vendeur|sales|owner|propri|responsable|charg/);
+    imp.cols.ptype = h.findIndex(c => /type/.test(c) && !/produit|product/.test(c));
     imp.cols.name = h.findIndex((c, i) => i !== imp.cols.oip && i !== imp.cols.rep && /partenaire|raison|soci[ée]t[ée]|client|enseigne|compte|account|nom|name/.test(c));
     imp.cols.month = find(imp.kind === "partners" ? /recrut|signature|cr[ée]ation|mois|date/ : /mois|month|p[ée]riode|date/);
     imp.monthMode = imp.cols.month >= 0 ? "col" : "fixed";
@@ -1058,19 +1189,21 @@ form.stack { display: grid; gap: 12px; }
       if (!month) return rejected.push({ ...base, status: "Mois illisible" });
       keys.forEach(k => seen.add(k));
       const cell = splitOipCell(oip);
-      creates.push({ oip: cell.oip, name: name || cell.rest || cell.oip, rep: m.rep, repGuess: m.guess, repRaw, month: month > CUR ? CUR : month });
+      creates.push({ ptype: imp.cols.ptype >= 0 ? parsePtype(r[imp.cols.ptype]) : "", oip: cell.oip, name: name || cell.rest || cell.oip, rep: m.rep, repGuess: m.guess, repRaw, month: month > CUR ? CUR : month });
     });
     return { creates, rejected };
   }
   async function applyPartnerImport() {
+    logSource = "Import " + (imp.file || "Excel");
     const list = imp.preview.creates;
     $("#modalRoot").innerHTML = `<div class="overlay"><div class="modal"><h3>Création en cours…</h3><p class="sub" id="impProg">0 / ${list.length} partenaires</p></div></div>`;
     let done = 0, failed = 0;
     for (const c of list) {
-      try { await api.savePartner({ id: uid("p"), name: c.name, repId: c.rep.id, recruited: c.month, oip: c.oip, products: [], mrr: {}, createdAt: Date.now(), updatedAt: Date.now() }); } catch { failed++; }
+      try { await api.savePartner({ id: uid("p"), name: c.name, repId: c.rep.id, recruited: c.month, oip: c.oip, ptype: c.ptype, products: [], mrr: {}, createdAt: Date.now(), updatedAt: Date.now() }); } catch { failed++; }
       done++; const el = $("#impProg"); if (el) el.textContent = `${done} / ${list.length} partenaires`;
     }
     $("#modalRoot").innerHTML = ""; imp = null;
+    logSource = "Saisie";
     toast(failed ? `${list.length - failed} partenaires créés, ${failed} en erreur : relancez l'import pour les restants.` : `${list.length} partenaire${list.length > 1 ? "s" : ""} créé${list.length > 1 ? "s" : ""}.`);
     render();
   }
@@ -1096,6 +1229,7 @@ form.stack { display: grid; gap: 12px; }
           <label class="field"><span>Colonne OIP</span><select id="impOip">${opt(imp.cols.oip)}</select></label>
           <label class="field"><span>Colonne commercial</span><select id="impRep">${opt(imp.cols.rep)}</select></label>
           <label class="field"><span>Colonne nom du partenaire</span><select id="impName">${opt(imp.cols.name)}</select></label>
+          <label class="field"><span>Colonne type (opérateur / ambassadeur)</span><select id="impPtype">${opt(imp.cols.ptype ?? -1)}</select></label>
         </div>
         <div class="filters" style="margin-bottom:12px">
           <label class="field"><span>Mois de recrutement</span><select id="impMonthMode"><option value="fixed" ${imp.monthMode === "fixed" ? "selected" : ""}>Le même pour tout le fichier</option><option value="col" ${imp.monthMode === "col" ? "selected" : ""}>Lu dans une colonne</option></select></label>
@@ -1129,8 +1263,8 @@ form.stack { display: grid; gap: 12px; }
           <span class="chip good">✓ ${pv.creates.length} partenaire${pv.creates.length > 1 ? "s" : ""} à créer</span>
           ${Object.entries(byStatus).map(([k, n]) => `<span class="chip ${k === "Déjà dans l'outil" || k === "OIP en double dans le fichier" ? "neutral" : "bad"}">${n} · ${esc(k)}</span>`).join("")}
         </div>
-        ${pv.creates.length ? `<div class="imp-tbl"><table class="t"><thead><tr><th>OIP</th><th>Partenaire</th><th>Commercial</th><th>Recruté en</th></tr></thead><tbody>
-          ${pv.creates.map(c => `<tr class="hl"><td>${esc(c.oip)}</td><td><b>${esc(c.name)}</b>${c.name === c.oip ? ' <span class="muted">(nom = OIP)</span>' : ""}</td><td>${esc(c.rep.name)}${c.repGuess ? ` <span class="muted">(fichier : ${esc(c.repRaw)})</span>` : ""}</td><td>${esc(mLong(c.month))}</td></tr>`).join("")}
+        ${pv.creates.length ? `<div class="imp-tbl"><table class="t"><thead><tr><th>OIP</th><th>Partenaire</th><th>Type</th><th>Commercial</th><th>Recruté en</th></tr></thead><tbody>
+          ${pv.creates.map(c => `<tr class="hl"><td>${esc(c.oip)}</td><td><b>${esc(c.name)}</b>${c.name === c.oip ? ' <span class="muted">(nom = OIP)</span>' : ""}</td><td>${c.ptype ? esc(ptypeLabel(c.ptype)) : '<span class="muted">—</span>'}</td><td>${esc(c.rep.name)}${c.repGuess ? ` <span class="muted">(fichier : ${esc(c.repRaw)})</span>` : ""}</td><td>${esc(mLong(c.month))}</td></tr>`).join("")}
         </tbody></table></div>` : `<div class="empty"><strong>Aucun partenaire à créer</strong><span>Tous les OIP du fichier sont déjà dans l'outil, ou aucune ligne n'a pu être reliée à un commercial.</span></div>`}
         ${pv.rejected.length ? `<details style="margin-top:12px" ${pv.rejected.some(l => l.status === "Commercial inconnu") ? "open" : ""}><summary><b>${pv.rejected.length} ligne${pv.rejected.length > 1 ? "s" : ""} non créée${pv.rejected.length > 1 ? "s" : ""}</b></summary>
           <div class="imp-tbl" style="margin-top:8px"><table class="t"><thead><tr><th>Ligne</th><th>OIP</th><th>Commercial (fichier)</th><th>Raison</th></tr></thead><tbody>
@@ -1167,6 +1301,7 @@ form.stack { display: grid; gap: 12px; }
       </div></div></div>`;
   }
   async function applyImport() {
+    logSource = "Import " + (imp.file || "Excel");
     const ups = imp.preview.updates.filter(u => !u.same);
     const byP = new Map();
     ups.forEach(u => { if (!byP.has(u.p.id)) byP.set(u.p.id, []); byP.get(u.p.id).push(u); });
@@ -1182,6 +1317,7 @@ form.stack { display: grid; gap: 12px; }
     }
     try { await api.saveSettings({ ...S.settings, lastImport: { at: Date.now(), file: imp.file, amounts: ups.length, rejected: imp.preview.rejected.length } }); } catch {}
     $("#modalRoot").innerHTML = ""; imp = null;
+    logSource = "Saisie";
     toast(failed ? `Import terminé avec ${failed} erreur${failed > 1 ? "s" : ""} : réessayez pour les partenaires concernés.` : `Import terminé : ${ups.length} montant${ups.length > 1 ? "s" : ""} mis à jour.`);
     render();
   }
@@ -1215,11 +1351,12 @@ form.stack { display: grid; gap: 12px; }
     if (t.id === "impAmt") imp.cols.amt = +t.value;
     if (t.id === "impRep") imp.cols.rep = +t.value;
     if (t.id === "impName") imp.cols.name = +t.value;
+    if (t.id === "impPtype") imp.cols.ptype = +t.value;
     if (t.id === "impMonthCol") imp.cols.month = +t.value;
     if (t.id === "impMonthMode") imp.monthMode = t.value;
     if (t.id === "impMonth" && t.value) imp.month = t.value > CUR ? CUR : t.value;
     if (t.id === "impMode") imp.mode = t.value;
-    if (["impSheet", "impHeader", "impOip", "impAmt", "impRep", "impName", "impMonthCol", "impMonthMode", "impMonth", "impMode"].includes(t.id)) renderImport();
+    if (["impSheet", "impHeader", "impOip", "impAmt", "impRep", "impName", "impPtype", "impMonthCol", "impMonthMode", "impMonth", "impMode"].includes(t.id)) renderImport();
   });
 
   let editProducts = [];
@@ -1234,6 +1371,7 @@ form.stack { display: grid; gap: 12px; }
         <label class="field"><span>Commercial</span><select id="ed-rep">${sortedReps().map(r => `<option value="${r.id}" ${r.id === p.repId ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select></label>
         <label class="field"><span>Mois de recrutement</span><input type="month" id="ed-month" value="${p.recruited || ""}" max="${CUR}" required></label>
         <label class="field"><span>OIP</span><input type="text" id="ed-oip" value="${esc(p.oip || "")}" maxlength="60"></label>
+        <label class="field"><span>Type de partenaire</span><select id="ed-type">${ptypeOptions(p.ptype || "", "— À préciser —")}</select></label>
         <div class="field"><span>Type de produit DFP</span><div id="edProdWrap">${prodBtn("edit", editProducts, false, true)}</div></div>
         <div class="acts"><button type="button" class="btn danger" id="ed-del">Supprimer</button>
           <span style="display:flex;gap:8px"><button type="button" class="btn" id="ed-cancel">Annuler</button><button type="submit" class="btn primary">Enregistrer</button></span></div>
@@ -1250,7 +1388,7 @@ form.stack { display: grid; gap: 12px; }
     };
     $("#editForm").onsubmit = async e => {
       e.preventDefault();
-      const np = { ...p, mrr: { ...(p.mrr || {}) }, name: $("#ed-name").value.trim(), repId: $("#ed-rep").value, recruited: $("#ed-month").value, oip: $("#ed-oip").value.trim(), products: [...editProducts], product: undefined, updatedAt: Date.now() };
+      const np = { ...p, mrr: { ...(p.mrr || {}) }, name: $("#ed-name").value.trim(), repId: $("#ed-rep").value, recruited: $("#ed-month").value, oip: $("#ed-oip").value.trim(), ptype: $("#ed-type").value, products: [...editProducts], product: undefined, updatedAt: Date.now() };
       if (!np.name) return;
       close(); await guarded(() => api.savePartner(np), "Partenaire mis à jour");
     };
@@ -1329,8 +1467,8 @@ form.stack { display: grid; gap: 12px; }
 
   // ---------- CSV ----------
   function csv() {
-    const rows = [["Partenaire", "OIP", "Type de produit DFP", "Commercial", "Mois de recrutement", "Mois", "MRR (EUR)"]];
-    for (const p of S.partners) for (const k of Object.keys(p.mrr || {}).sort()) if (mrrOf(p, k)) rows.push([p.name, p.oip || "", prods(p).join(", "), repName(p.repId), p.recruited || "", k, mrrOf(p, k).toFixed(2).replace(".", ",")]);
+    const rows = [["Partenaire", "OIP", "Type de partenaire", "Type de produit DFP", "Commercial", "Mois de recrutement", "Mois", "MRR (EUR)"]];
+    for (const p of S.partners) for (const k of Object.keys(p.mrr || {}).sort()) if (mrrOf(p, k)) rows.push([p.name, p.oip || "", ptypeLabel(p.ptype), prods(p).join(", "), repName(p.repId), p.recruited || "", k, mrrOf(p, k).toFixed(2).replace(".", ",")]);
     return "﻿" + rows.map(r => r.map(c => /[";\n]/.test(String(c)) ? `"${String(c).replace(/"/g, '""')}"` : c).join(";")).join("\n");
   }
   async function exportCsv() {
@@ -1392,6 +1530,8 @@ form.stack { display: grid; gap: 12px; }
     }
     const act = t.dataset.act;
     if (act === "export") exportCsv();
+    if (act === "clearFilters") { ui.fType = "all"; ui.fProd = "all"; render(); }
+    if (act === "changes") openChanges();
     if (act === "import") openImport();
     if (act === "demo") loadDemo();
     if (act === "seed9") {
@@ -1408,6 +1548,8 @@ form.stack { display: grid; gap: 12px; }
     if (t.id === "entryRep") { ui.entryRep = t.value; savePrefs(); render(); }
     if (t.id === "pRep") { ui.partnerRep = t.value; render(); }
     if (t.id === "bonusYear") { ui.bonusYear = +t.value; render(); }
+    if (t.id === "fType") { ui.fType = t.value; render(); }
+    if (t.id === "fProd") { ui.fProd = t.value; render(); }
     if (t.id === "teamYear") { ui.teamYear = +t.value; render(); }
     if (t.classList.contains("mrr-in")) {
       const p = S.partners.find(x => x.id === t.dataset.pid);
@@ -1421,6 +1563,11 @@ form.stack { display: grid; gap: 12px; }
       const mrr = { ...(p.mrr || {}) };
       if (v === null) delete mrr[mk]; else mrr[mk] = v;
       await guarded(() => api.savePartner({ ...p, mrr, updatedAt: Date.now() }), `${p.name} · ${mLong(mk)} : ${v === null ? "montant effacé" : fmt(v) + " enregistré"}`);
+    }
+    if (t.classList.contains("ptype-in")) {
+      const p = S.partners.find(x => x.id === t.dataset.pid);
+      if (!p || (p.ptype || "") === t.value) return;
+      await guarded(() => api.savePartner({ ...p, ptype: t.value, updatedAt: Date.now() }), `${p.name} : ${t.value ? ptypeLabel(t.value) : "type effacé"}`);
     }
     if (t.classList.contains("rec-in") || t.classList.contains("oip-in")) {
       const p = S.partners.find(x => x.id === t.dataset.pid);
@@ -1479,10 +1626,10 @@ form.stack { display: grid; gap: 12px; }
     const f = e.target;
     e.preventDefault();
     if (f.id === "newPartner") {
-      const name = $("#np-name").value.trim(), repId = $("#np-rep").value, rec = $("#np-month").value, oip = $("#np-oip").value.trim(), products = [...ui.npProducts];
+      const name = $("#np-name").value.trim(), repId = $("#np-rep").value, rec = $("#np-month").value, oip = $("#np-oip").value.trim(), products = [...ui.npProducts], ptype = $("#np-type").value;
       if (!name || !repId || !rec) return;
       const mrr = {};
-      const ok = await guarded(() => api.savePartner({ id: uid("p"), name, repId, recruited: rec, oip, products, mrr, createdAt: Date.now(), updatedAt: Date.now() }), `${name} ajouté`);
+      const ok = await guarded(() => api.savePartner({ id: uid("p"), name, repId, recruited: rec, oip, ptype, products, mrr, createdAt: Date.now(), updatedAt: Date.now() }), `${name} ajouté`);
       if (ok) { ui.entryYear = yOf(rec); ui.npProducts = []; render(); const o = $("#np-oip"); if (o) o.value = "";  const n = $("#np-name"); if (n) { n.value = ""; n.focus(); } }
     }
     if (f.id === "newRep") {
