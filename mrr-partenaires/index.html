@@ -1205,7 +1205,9 @@ form.stack { display: grid; gap: 12px; }
     const lines = [], groups = new Map(), glines = new Map();
     const cellTxt = v => v instanceof Date ? v.toLocaleDateString("fr-FR") : String(v ?? "").trim().slice(0, 40);
     imp.rows.slice(imp.header + 1).forEach((r, i) => {
-      const rawOip = r[imp.cols.oip];
+      // partner column empty: the partner ordered for itself and appears as the client
+      const selfOrder = String(r[imp.cols.oip] ?? "").trim() === "" && imp.cols.client >= 0 && String(r[imp.cols.client] ?? "").trim() !== "";
+      const rawOip = selfOrder ? r[imp.cols.client] : r[imp.cols.oip];
       if (String(rawOip ?? "").trim() === "" && String(r[imp.cols.amt] ?? "").trim() === "") return;
       const line = { row: imp.header + i + 2, oip: String(rawOip ?? "").trim(), amt: parseImportAmount(r[imp.cols.amt]), month: imp.monthMode === "col" ? parseMonthCell(r[imp.cols.month]) : imp.month };
       const keys = OIP_RE.test(line.oip) || /^\d+$/.test(line.oip) ? oipKeys(rawOip) : [];
@@ -1224,7 +1226,7 @@ form.stack { display: grid; gap: 12px; }
       if (line.status === "ok") {
         const g = line.partner.id + "|" + line.month; groups.set(g, (groups.get(g) || 0) + line.amt);
         if (!glines.has(g)) glines.set(g, []);
-        if (line.amt) glines.get(g).push([line.amt, imp.cols.ref >= 0 ? cellTxt(r[imp.cols.ref]) : "", imp.monthMode === "col" ? cellTxt(r[imp.cols.month]) : "", imp.cols.client >= 0 ? cellTxt(r[imp.cols.client]) : ""]);
+        if (line.amt) glines.get(g).push([line.amt, imp.cols.ref >= 0 ? cellTxt(r[imp.cols.ref]) : "", imp.monthMode === "col" ? cellTxt(r[imp.cols.month]) : "", imp.cols.client >= 0 ? cellTxt(r[imp.cols.client]) + (selfOrder ? " (commande pour lui-même)" : "") : ""]);
       }
     });
     const updates = [...groups].map(([g, sum]) => {
@@ -1331,6 +1333,7 @@ form.stack { display: grid; gap: 12px; }
           <label class="field"><span>Colonne OIP ou nom du partenaire</span><select id="impOip">${opt(imp.cols.oip, true)}</select></label>
           <label class="field"><span>Colonne montant MRR</span><select id="impAmt">${opt(imp.cols.amt, true)}</select></label>
           <label class="field"><span>Colonne référence (facultatif)</span><select id="impRef">${opt(imp.cols.ref ?? -1, true)}</select></label>
+          <label class="field"><span>Colonne client (facultatif)</span><select id="impClient">${opt(imp.cols.client ?? -1, true)}</select></label>
         </div>
         <div class="filters" style="margin-bottom:12px">
           <label class="field"><span>Mois concerné</span><select id="impMonthMode"><option value="fixed" ${imp.monthMode === "fixed" ? "selected" : ""}>Le même pour tout le fichier</option><option value="col" ${imp.monthMode === "col" ? "selected" : ""}>Lu dans une colonne</option></select></label>
@@ -1444,11 +1447,12 @@ form.stack { display: grid; gap: 12px; }
     if (t.id === "impName") imp.cols.name = +t.value;
     if (t.id === "impPtype") imp.cols.ptype = +t.value;
     if (t.id === "impRef") imp.cols.ref = +t.value;
+    if (t.id === "impClient") imp.cols.client = +t.value;
     if (t.id === "impMonthCol") imp.cols.month = +t.value;
     if (t.id === "impMonthMode") imp.monthMode = t.value;
     if (t.id === "impMonth" && t.value) imp.month = t.value > CUR ? CUR : t.value;
     if (t.id === "impMode") imp.mode = t.value;
-    if (["impSheet", "impHeader", "impOip", "impAmt", "impRep", "impName", "impPtype", "impRef", "impMonthCol", "impMonthMode", "impMonth", "impMode"].includes(t.id)) renderImport();
+    if (["impSheet", "impHeader", "impOip", "impAmt", "impRep", "impName", "impPtype", "impRef", "impClient", "impMonthCol", "impMonthMode", "impMonth", "impMode"].includes(t.id)) renderImport();
   });
 
   let editProducts = [];
