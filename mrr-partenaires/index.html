@@ -198,6 +198,13 @@ form.stack { display: grid; gap: 12px; }
 .upd > div { display: grid; gap: 2px; min-width: 0; }
 .upd .btn { margin-left: auto; }
 .pos { color: var(--good); }
+.warnt { color: var(--warn); }
+.det-table td.sticky, .det-table th.sticky { position: sticky; left: 0; background: var(--surface); z-index: 1; min-width: 190px; box-shadow: 1px 0 0 var(--line); }
+.det-table td.sticky small { display: block; color: var(--muted); font-size: 11px; }
+.det-cell { cursor: pointer; min-width: 110px; vertical-align: top; }
+.det-cell:hover, .det-cell:focus-visible { background: var(--teal-soft); outline: none; }
+.det-cell b { display: block; }
+.det-cell small { display: block; font-size: 11px; color: var(--fg-2); white-space: normal; line-height: 1.35; max-width: 200px; margin-left: auto; }
 .neg { color: var(--bad); }
 .empty { padding: 28px 16px; text-align: center; color: var(--fg-2); display: grid; gap: 10px; justify-items: center; }
 .empty strong { color: var(--fg); font-size: 15px; }
@@ -239,6 +246,7 @@ form.stack { display: grid; gap: 12px; }
       <button class="tab" role="tab" id="tab-entry" data-tab="entry" aria-selected="false">Saisie MRR mensuel</button>
       <button class="tab" role="tab" id="tab-partners" data-tab="partners" aria-selected="false">Partenaires</button>
       <button class="tab" role="tab" id="tab-team" data-tab="team" aria-selected="false">Équipe &amp; objectifs</button>
+      <button class="tab" role="tab" id="tab-detail" data-tab="detail" aria-selected="false" hidden>Détail MRR</button>
       <button class="tab" role="tab" id="tab-visits" data-tab="visits" aria-selected="false" hidden>Connexions</button>
     </nav>
   </div>
@@ -252,6 +260,7 @@ form.stack { display: grid; gap: 12px; }
   <section id="view-partners" hidden></section>
   <section id="view-team" hidden></section>
   <section id="view-visits" hidden></section>
+  <section id="view-detail" hidden></section>
   <p class="foot">Les consultations de cette page (personne, date) sont enregistrées pour le suivi de l'équipe. Seuls les administrateurs de la page les voient.</p>
 </main>
 <div class="tip" id="tip" hidden></div>
@@ -293,12 +302,12 @@ form.stack { display: grid; gap: 12px; }
   };
 
   // ---------- state ----------
-  const S = { reps: [], partners: [], settings: { monthlyTarget: 500 }, mode: "loading", canWrite: true, loaded: false, isAdmin: false, visits: null, names: {}, updates: [] };
+  const S = { reps: [], partners: [], settings: { monthlyTarget: 500 }, mode: "loading", canWrite: true, loaded: false, isAdmin: false, visits: null, names: {}, updates: [], details: {} };
   const prefs = safeLS.get("mrr-ui") || {};
   const ui = {
     bonusYear: now.getFullYear(),
     bonusGran: "month",
-    tab: ["dash", "bonus", "entry", "partners", "team", "visits"].includes(location.hash.slice(1)) ? location.hash.slice(1) : (prefs.tab || "dash"),
+    tab: ["dash", "bonus", "entry", "partners", "team", "visits", "detail"].includes(location.hash.slice(1)) ? location.hash.slice(1) : (prefs.tab || "dash"),
     gran: prefs.gran || "quarter",
     period: null,
     dashRep: "all",
@@ -342,8 +351,8 @@ form.stack { display: grid; gap: 12px; }
   }
   const LOCAL_KEY = "mrr-partenaires-data";
   const local = {
-    load() { const d = safeLS.get(LOCAL_KEY); if (d) { S.reps = d.reps || []; S.partners = d.partners || []; S.settings = d.settings || S.settings; S.updates = d.updates || []; } },
-    persist() { safeLS.set(LOCAL_KEY, { reps: S.reps, partners: S.partners, settings: S.settings, updates: S.updates }); }
+    load() { const d = safeLS.get(LOCAL_KEY); if (d) { S.reps = d.reps || []; S.partners = d.partners || []; S.settings = d.settings || S.settings; S.updates = d.updates || []; S.details = d.details || {}; } },
+    persist() { safeLS.set(LOCAL_KEY, { reps: S.reps, partners: S.partners, settings: S.settings, updates: S.updates, details: S.details }); }
   };
   const strip = o => { const { id, ...rest } = o; return JSON.parse(JSON.stringify(rest)); };
   function upsertLocal(list, item) { const i = list.findIndex(x => x.id === item.id); if (i >= 0) list[i] = item; else list.push(item); }
@@ -396,9 +405,15 @@ form.stack { display: grid; gap: 12px; }
     },
     async deletePartner(id) {
       const ch = diffPartner(S.partners.find(x => x.id === id), null);
-      if (db) { await db.collection("partners").doc(id).delete(); queueLog(ch); return; }
+      if (db) { await db.collection("partners").doc(id).delete(); queueLog(ch); try { await db.doc("details/" + id).delete(); } catch {} return; }
+      delete S.details[id];
       queueLog(ch);
       S.partners = S.partners.filter(p => p.id !== id); local.persist(); render();
+    },
+    // admin-only: the individual amounts behind each monthly total
+    async saveDetails(pid, lines) {
+      if (db) return db.doc("details/" + pid).set({ lines, updatedAt: Date.now() });
+      S.details[pid] = { lines }; local.persist();
     },
     async saveSettings(s) {
       s = { ...s, updatedAt: Date.now() };
@@ -436,6 +451,7 @@ form.stack { display: grid; gap: 12px; }
       } catch {}
     }
     if (S.isAdmin) {
+      db.collection("details").onSnapshot(s => { const o = {}; s.docs.forEach(d => { o[d.id] = d.data(); }); S.details = o; if (ui.tab === "detail") render(); }, () => {});
       db.collection("visits").onSnapshot(s => { S.visits = s.docs.map(d => ({ id: d.id, ...d.data() })); resolveNames(); if (ui.tab === "visits") render(); }, () => { S.visits = []; });
     }
     const ready = { reps: false, partners: false, settings: false };
@@ -562,9 +578,10 @@ form.stack { display: grid; gap: 12px; }
     const lu = lastUpdate();
     $("#hdrUpdated").textContent = lu ? " · données mises à jour le " + new Date(lu).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) : "";
     $("#tab-visits").hidden = !S.isAdmin;
-    if (ui.tab === "visits" && !S.isAdmin && S.mode !== "loading") ui.tab = "dash";
+    $("#tab-detail").hidden = !S.isAdmin;
+    if ((ui.tab === "visits" || ui.tab === "detail") && !S.isAdmin && S.mode !== "loading") ui.tab = "dash";
     $$(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.tab === ui.tab)));
-    ["dash", "bonus", "entry", "partners", "team", "visits"].forEach(v => { const el = $("#view-" + v); el.hidden = v !== ui.tab; if (el.hidden) el.innerHTML = ""; });
+    ["dash", "bonus", "entry", "partners", "team", "visits", "detail"].forEach(v => { const el = $("#view-" + v); el.hidden = v !== ui.tab; if (el.hidden) el.innerHTML = ""; });
     renderBanner();
     if (ui.tab === "dash") renderDash();
     if (ui.tab === "entry") renderEntry();
@@ -572,6 +589,7 @@ form.stack { display: grid; gap: 12px; }
     if (ui.tab === "team") renderTeam();
     if (ui.tab === "bonus") renderBonus();
     if (ui.tab === "visits") renderVisits();
+    if (ui.tab === "detail") renderDetail();
   }
 
   function renderBanner() {
@@ -965,6 +983,56 @@ form.stack { display: grid; gap: 12px; }
     </div>`;
   }
 
+  // ----- MRR detail (admins only) -----
+  function detailLines(p, k) { return ((((S.details[p.id] || {}).lines) || {})[k]) || []; }
+  function renderDetail() {
+    const el = $("#view-detail");
+    if (!S.isAdmin) { el.innerHTML = ""; return; }
+    const y = ui.detYear || now.getFullYear(), months = range(ym(y, 1), ym(y, 12)).filter(k => k <= CUR);
+    const q = (ui.detQ || "").trim().toLowerCase();
+    const ps = FP().filter(p => (ui.detRep || "all") === "all" || p.repId === ui.detRep).filter(p => !q || p.name.toLowerCase().includes(q) || (p.oip || "").toLowerCase().includes(q))
+      .filter(p => months.some(k => mrrOf(p, k) || detailLines(p, k).length)).sort((a, b) => repName(a.repId).localeCompare(repName(b.repId), "fr") || a.name.localeCompare(b.name, "fr"));
+    const years = []; for (let yy = now.getFullYear(); yy >= Math.min(yOf(dataBounds().min), now.getFullYear() - 1); yy--) years.push(yy);
+    const cell = (p, k) => {
+      const v = mrrOf(p, k), ls = detailLines(p, k);
+      if (!v && !ls.length) return `<td class="n zero">–</td>`;
+      const sum = cents(ls.reduce((t, l) => t + (+l.v || 0), 0)), adj = cents(v - sum);
+      let shown = ls.length > 8 ? ls.slice(0, 8).map(l => fmtN(l.v)).join(" + ") + ` + … <span class="muted">(${ls.length} lignes)</span>` : ls.map(l => fmtN(l.v)).join(" + ");
+      if (ls.length && Math.abs(adj) >= 0.01) shown += ` ${adj > 0 ? "+" : "−"} <span class="warnt">${fmtN(Math.abs(adj))} manuel</span>`;
+      return `<td class="n det-cell" data-det="${p.id}|${k}" tabindex="0"><b>${fmt(v)}</b><small>${ls.length ? shown : '<span class="muted">saisie manuelle</span>'}</small></td>`;
+    };
+    el.innerHTML = `<div class="card">
+      <div class="toolbar"><div><h2>Détail MRR par partenaire · ${y}</h2>
+        <p class="sub" style="margin:0">Pour chaque mois, le total et les montants qui le composent (lignes du fichier importé). Cliquez sur une case pour voir chaque ligne avec sa référence et sa date. Visible uniquement par les administrateurs.</p></div></div>
+      <div class="filters" style="margin-bottom:12px">
+        <label class="field"><span>Année</span><select id="detYear">${years.map(yy => `<option ${yy === y ? "selected" : ""}>${yy}</option>`).join("")}</select></label>
+        <label class="field"><span>Commercial</span><select id="detRep"><option value="all">Tous</option>${sortedReps().map(r => `<option value="${r.id}" ${ui.detRep === r.id ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select></label>
+        <label class="field"><span>Rechercher</span><input type="text" id="detQ" value="${esc(ui.detQ || "")}" placeholder="Nom ou OIP"></label>
+        ${filterFields()}
+      </div>
+      ${ps.length ? `<div class="tbl-wrap"><table class="t det-table"><thead><tr><th class="sticky">Partenaire</th>${months.map(k => `<th class="n">${MONTHS[mOf(k) - 1]}</th>`).join("")}<th class="n">Total</th></tr></thead><tbody>
+        ${ps.map(p => `<tr><td class="sticky"><b>${esc(p.name)}</b><small>${esc(repName(p.repId))}${p.oip ? " · " + esc(p.oip) : ""}</small></td>${months.map(k => cell(p, k)).join("")}<td class="n"><b>${fmt(months.reduce((t, k) => t + mrrOf(p, k), 0))}</b></td></tr>`).join("")}
+      </tbody></table></div>` : `<div class="empty"><strong>Aucun montant sur cette période</strong><span>Le détail apparaît après un import de fichier (ou une saisie) pour ${y}.</span></div>`}
+    </div>`;
+  }
+  const fmtN = v => (+v || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function openDetailCell(pid, k) {
+    const p = S.partners.find(x => x.id === pid); if (!p) return;
+    const ls = detailLines(p, k), v = mrrOf(p, k), sum = cents(ls.reduce((t, l) => t + (+l.v || 0), 0)), adj = cents(v - sum);
+    $("#modalRoot").innerHTML = `<div class="overlay" id="ov"><div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="dT">
+      <h3 id="dT">${esc(p.name)} · ${esc(mLong(k))}</h3>
+      <p class="sub">${esc(repName(p.repId))}${p.oip ? " · " + esc(p.oip) : ""} · total du mois <b>${fmt(v)}</b></p>
+      <div class="imp-tbl"><table class="t"><thead><tr><th>#</th><th>Référence</th><th>Date</th><th>Fichier</th><th class="n">Montant</th></tr></thead><tbody>
+        ${ls.map((l, i) => `<tr><td class="muted num">${i + 1}</td><td>${esc(l.ref || "—")}</td><td>${esc(l.d || "—")}</td><td class="muted">${esc(l.src || "")}</td><td class="n">${fmt(l.v)}</td></tr>`).join("")}
+        ${Math.abs(adj) >= 0.01 ? `<tr><td></td><td colspan="3"><span class="warnt">${ls.length ? "Écart avec le total (saisie ou correction manuelle)" : "Saisie manuelle, sans détail importé"}</span></td><td class="n">${signed(adj)}</td></tr>` : ""}
+      </tbody><tfoot><tr><td colspan="4">Total du mois</td><td class="n">${fmt(v)}</td></tr></tfoot></table></div>
+      <div class="acts"><span></span><button type="button" class="btn primary" id="dClose">Fermer</button></div></div></div>`;
+    const close = () => { $("#modalRoot").innerHTML = ""; };
+    $("#dClose").onclick = close; $("#ov").addEventListener("click", e => { if (e.target.id === "ov") close(); });
+  }
+  document.addEventListener("click", e => { const c = e.target.closest("[data-det]"); if (c) { const [pid, k] = c.dataset.det.split("|"); openDetailCell(pid, k); } });
+  document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.dataset && e.target.dataset.det) { const [pid, k] = e.target.dataset.det.split("|"); openDetailCell(pid, k); } });
+
   // ----- Visits (admins only) -----
   function renderVisits() {
     const el = $("#view-visits");
@@ -1110,11 +1178,14 @@ form.stack { display: grid; gap: 12px; }
       const sample = imp.rows.slice(imp.header + 1, imp.header + 30);
       imp.cols.oip = h.findIndex((_, i) => sample.filter(r => OIP_RE.test(String(r[i] ?? ""))).length >= Math.min(3, sample.length));
     }
+    // otherwise the partner-name column
+    if (imp.cols.oip < 0) imp.cols.oip = h.findIndex(c => /partenaire|soci[ée]t[ée]|client|raison|compte|account|\bnom\b|^name$/.test(c) && !/day|jour|date|commercial/.test(c));
     imp.cols.amt = find(/mrr|montant|amount|ca\b|total|€/);
     imp.cols.rep = find(/commercia|vendeur|sales|owner|propri|responsable|charg/);
+    imp.cols.ref = h.findIndex((c, i) => i !== imp.cols.oip && /oc_ref|r[ée]f|commande|order|contrat/.test(c));
     imp.cols.ptype = h.findIndex(c => /type/.test(c) && !/produit|product/.test(c));
     imp.cols.name = h.findIndex((c, i) => i !== imp.cols.oip && i !== imp.cols.rep && /partenaire|raison|soci[ée]t[ée]|client|enseigne|compte|account|nom|name/.test(c));
-    imp.cols.month = find(imp.kind === "partners" ? /recrut|signature|cr[ée]ation|mois|date/ : /mois|month|p[ée]riode|date/);
+    imp.cols.month = find(imp.kind === "partners" ? /recrut|signature|cr[ée]ation|mois|date/ : /mois|month|p[ée]riode|date|day|jour/);
     imp.monthMode = imp.cols.month >= 0 ? "col" : "fixed";
   }
   function pickSheet(name) {
@@ -1125,30 +1196,39 @@ form.stack { display: grid; gap: 12px; }
     guessColumns();
   }
   function buildPreview() {
-    const index = new Map(), dupOip = new Set();
+    const index = new Map(), dupOip = new Set(), byName = new Map(), dupName = new Set();
     for (const p of S.partners) for (const k of (p.oip ? oipKeys(p.oip) : [])) { if (index.has(k) && index.get(k) !== p) dupOip.add(k); else index.set(k, p); }
-    const lines = [], groups = new Map();
+    for (const p of S.partners) { const k = normName(p.name); if (!k) continue; if (byName.has(k)) dupName.add(k); else byName.set(k, p); }
+    const lines = [], groups = new Map(), glines = new Map();
+    const cellTxt = v => v instanceof Date ? v.toLocaleDateString("fr-FR") : String(v ?? "").trim().slice(0, 40);
     imp.rows.slice(imp.header + 1).forEach((r, i) => {
       const rawOip = r[imp.cols.oip];
       if (String(rawOip ?? "").trim() === "" && String(r[imp.cols.amt] ?? "").trim() === "") return;
       const line = { row: imp.header + i + 2, oip: String(rawOip ?? "").trim(), amt: parseImportAmount(r[imp.cols.amt]), month: imp.monthMode === "col" ? parseMonthCell(r[imp.cols.month]) : imp.month };
-      const keys = oipKeys(rawOip);
+      const keys = OIP_RE.test(line.oip) || /^\d+$/.test(line.oip) ? oipKeys(rawOip) : [];
       line.partner = keys.map(k => index.get(k)).find(Boolean) || null;
-      if (!line.oip) line.status = "Pas d'OIP";
-      else if (keys.some(k => dupOip.has(k))) line.status = "OIP en double dans l'outil";
-      else if (!line.partner) line.status = "OIP inconnu";
+      // no OIP match: try the partner name (also "OIP-123 - NAME" cells)
+      const nk = normName(splitOipCell(rawOip).rest || line.oip);
+      if (!line.partner && nk && byName.has(nk) && !dupName.has(nk)) { line.partner = byName.get(nk); line.byName = true; }
+      if (!line.oip) line.status = "Pas d'OIP ni de nom";
+      else if (!line.byName && keys.some(k => dupOip.has(k))) line.status = "OIP en double dans l'outil";
+      else if (!line.partner) line.status = nk && dupName.has(nk) ? "Nom en double dans l'outil" : "Partenaire inconnu (OIP ou nom)";
       else if (!isFinite(line.amt)) line.status = "Montant illisible";
       else if (!line.month) line.status = "Mois illisible";
       else if (line.month > CUR) line.status = "Mois futur";
       else line.status = "ok";
       lines.push(line);
-      if (line.status === "ok") { const g = line.partner.id + "|" + line.month; groups.set(g, (groups.get(g) || 0) + line.amt); }
+      if (line.status === "ok") {
+        const g = line.partner.id + "|" + line.month; groups.set(g, (groups.get(g) || 0) + line.amt);
+        if (!glines.has(g)) glines.set(g, []);
+        glines.get(g).push([line.amt, imp.cols.ref >= 0 ? cellTxt(r[imp.cols.ref]) : "", imp.monthMode === "col" ? cellTxt(r[imp.cols.month]) : ""]);
+      }
     });
     const updates = [...groups].map(([g, sum]) => {
       const [pid, month] = g.split("|"); const p = S.partners.find(x => x.id === pid);
       const cur = (p.mrr || {})[month];
       const next = cents(imp.mode === "add" ? (+cur || 0) + sum : sum);
-      return { p, month, cur, next, same: cur !== undefined && +cur === next, before: p.recruited && month < p.recruited };
+      return { p, month, cur, next, lines: glines.get(g) || [], same: cur !== undefined && +cur === next, before: p.recruited && month < p.recruited };
     }).sort((a, b) => a.p.name.localeCompare(b.p.name, "fr") || a.month.localeCompare(b.month));
     return { lines, updates, rejected: lines.filter(l => l.status !== "ok") };
   }
@@ -1245,8 +1325,9 @@ form.stack { display: grid; gap: 12px; }
       body = `<div class="filters" style="margin-bottom:12px">
           ${imp.wb.SheetNames.length > 1 ? `<label class="field"><span>Onglet</span><select id="impSheet">${imp.wb.SheetNames.map(n => `<option ${n === imp.sheet ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></label>` : ""}
           <label class="field"><span>Ligne d'en-tête</span><input type="number" id="impHeader" min="1" value="${imp.header + 1}" style="width:90px"></label>
-          <label class="field"><span>Colonne OIP</span><select id="impOip">${opt(imp.cols.oip, true)}</select></label>
+          <label class="field"><span>Colonne OIP ou nom du partenaire</span><select id="impOip">${opt(imp.cols.oip, true)}</select></label>
           <label class="field"><span>Colonne montant MRR</span><select id="impAmt">${opt(imp.cols.amt, true)}</select></label>
+          <label class="field"><span>Colonne référence (facultatif)</span><select id="impRef">${opt(imp.cols.ref ?? -1, true)}</select></label>
         </div>
         <div class="filters" style="margin-bottom:12px">
           <label class="field"><span>Mois concerné</span><select id="impMonthMode"><option value="fixed" ${imp.monthMode === "fixed" ? "selected" : ""}>Le même pour tout le fichier</option><option value="col" ${imp.monthMode === "col" ? "selected" : ""}>Lu dans une colonne</option></select></label>
@@ -1277,14 +1358,14 @@ form.stack { display: grid; gap: 12px; }
       body = `<div class="imp-sum">
           <span class="chip good">✓ ${pv.lines.length - pv.rejected.length} ligne${pv.lines.length - pv.rejected.length > 1 ? "s" : ""} reconnue${pv.lines.length - pv.rejected.length > 1 ? "s" : ""}</span>
           <span class="chip neutral">${changed.length} montant${changed.length > 1 ? "s" : ""} à mettre à jour</span>
-          ${Object.entries(byStatus).map(([k, n]) => `<span class="chip ${k === "OIP inconnu" || k === "Pas d'OIP" ? "warn" : "bad"}">${n} · ${esc(k)}</span>`).join("")}
+          ${Object.entries(byStatus).map(([k, n]) => `<span class="chip ${/inconnu|Pas d'OIP/.test(k) ? "warn" : "bad"}">${n} · ${esc(k)}</span>`).join("")}
         </div>
         ${pv.updates.length ? `<div class="imp-tbl"><table class="t"><thead><tr><th>OIP</th><th>Partenaire</th><th>Commercial</th><th>Mois</th><th class="n">Actuel</th><th class="n">Après import</th><th></th></tr></thead><tbody>
-          ${pv.updates.map(u => `<tr class="${u.same ? "" : "hl"}"><td>${esc(u.p.oip)}</td><td><b>${esc(u.p.name)}</b></td><td class="muted">${esc(repName(u.p.repId))}</td><td>${esc(mLong(u.month))}</td><td class="n">${u.cur === undefined ? "—" : fmt(u.cur)}</td><td class="n"><b>${fmt(u.next)}</b></td><td>${u.same ? `<span class="chip neutral">Inchangé</span>` : u.before ? `<span class="chip warn" title="Mois antérieur au recrutement">Avant recrutement</span>` : ""}</td></tr>`).join("")}
+          ${pv.updates.map(u => `<tr class="${u.same ? "" : "hl"}"><td>${esc(u.p.oip || "—")}</td><td><b>${esc(u.p.name)}</b></td><td class="muted">${esc(repName(u.p.repId))}</td><td>${esc(mLong(u.month))}</td><td class="n">${u.cur === undefined ? "—" : fmt(u.cur)}</td><td class="n"><b>${fmt(u.next)}</b></td><td>${u.same ? `<span class="chip neutral">Inchangé</span>` : u.before ? `<span class="chip warn" title="Mois antérieur au recrutement">Avant recrutement</span>` : ""}</td></tr>`).join("")}
         </tbody></table></div>` : `<div class="empty"><strong>Aucune ligne reconnue</strong><span>Vérifiez les colonnes choisies et que les OIP du fichier sont bien saisis dans l'outil.</span></div>`}
         ${pv.rejected.length ? `<details style="margin-top:12px"><summary><b>${pv.rejected.length} ligne${pv.rejected.length > 1 ? "s" : ""} non importée${pv.rejected.length > 1 ? "s" : ""}</b> (cliquez pour voir)</summary>
           <div class="imp-tbl" style="margin-top:8px"><table class="t"><thead><tr><th>Ligne</th><th>OIP</th><th class="n">Montant</th><th>Raison</th></tr></thead><tbody>
-          ${pv.rejected.slice(0, 200).map(l => `<tr><td class="num muted">${l.row}</td><td>${esc(l.oip || "—")}</td><td class="n">${isFinite(l.amt) ? fmt(l.amt) : "—"}</td><td>${esc(l.status)}${l.status === "OIP inconnu" ? ` <span class="muted">: ajoutez cet OIP au partenaire dans la grille de saisie</span>` : ""}</td></tr>`).join("")}
+          ${pv.rejected.slice(0, 200).map(l => `<tr><td class="num muted">${l.row}</td><td>${esc(l.oip || "—")}</td><td class="n">${isFinite(l.amt) ? fmt(l.amt) : "—"}</td><td>${esc(l.status)}${l.status === "Partenaire inconnu (OIP ou nom)" ? ` <span class="muted">: ajoutez l'OIP au partenaire dans la grille, ou vérifiez l'orthographe du nom</span>` : ""}</td></tr>`).join("")}
           ${pv.rejected.length > 200 ? `<tr><td colspan="4" class="muted">… et ${pv.rejected.length - 200} autres lignes. C'est normal si le fichier contient tous les partenaires et pas seulement ceux suivis ici.</td></tr>` : ""}
           </tbody></table></div></details>` : ""}`;
     }
@@ -1305,6 +1386,8 @@ form.stack { display: grid; gap: 12px; }
     const ups = imp.preview.updates.filter(u => !u.same);
     const byP = new Map();
     ups.forEach(u => { if (!byP.has(u.p.id)) byP.set(u.p.id, []); byP.get(u.p.id).push(u); });
+    const det = new Map();
+    imp.preview.updates.forEach(u => { if (!det.has(u.p.id)) det.set(u.p.id, []); det.get(u.p.id).push(u); });
     $("#modalRoot").innerHTML = `<div class="overlay"><div class="modal"><h3>Import en cours…</h3><p class="sub" id="impProg">0 / ${byP.size} partenaires</p></div></div>`;
     let done = 0, failed = 0;
     for (const [pid, list] of byP) {
@@ -1314,6 +1397,11 @@ form.stack { display: grid; gap: 12px; }
       list.forEach(u => { mrr[u.month] = u.next; });
       try { await api.savePartner({ ...p, mrr, updatedAt: Date.now() }); } catch { failed++; }
       done++; const el = $("#impProg"); if (el) el.textContent = `${done} / ${byP.size} partenaires`;
+    }
+    for (const [pid, list] of det) {
+      const lines = { ...(((S.details[pid] || {}).lines) || {}) };
+      list.forEach(u => { const fresh = u.lines.map(l => ({ v: l[0], ref: l[1], d: l[2], src: imp.file })); lines[u.month] = imp.mode === "add" ? [...(lines[u.month] || []), ...fresh] : fresh; });
+      try { await api.saveDetails(pid, lines); } catch {}
     }
     try { await api.saveSettings({ ...S.settings, lastImport: { at: Date.now(), file: imp.file, amounts: ups.length, rejected: imp.preview.rejected.length } }); } catch {}
     $("#modalRoot").innerHTML = ""; imp = null;
@@ -1352,11 +1440,12 @@ form.stack { display: grid; gap: 12px; }
     if (t.id === "impRep") imp.cols.rep = +t.value;
     if (t.id === "impName") imp.cols.name = +t.value;
     if (t.id === "impPtype") imp.cols.ptype = +t.value;
+    if (t.id === "impRef") imp.cols.ref = +t.value;
     if (t.id === "impMonthCol") imp.cols.month = +t.value;
     if (t.id === "impMonthMode") imp.monthMode = t.value;
     if (t.id === "impMonth" && t.value) imp.month = t.value > CUR ? CUR : t.value;
     if (t.id === "impMode") imp.mode = t.value;
-    if (["impSheet", "impHeader", "impOip", "impAmt", "impRep", "impName", "impPtype", "impMonthCol", "impMonthMode", "impMonth", "impMode"].includes(t.id)) renderImport();
+    if (["impSheet", "impHeader", "impOip", "impAmt", "impRep", "impName", "impPtype", "impRef", "impMonthCol", "impMonthMode", "impMonth", "impMode"].includes(t.id)) renderImport();
   });
 
   let editProducts = [];
@@ -1548,6 +1637,8 @@ form.stack { display: grid; gap: 12px; }
     if (t.id === "entryRep") { ui.entryRep = t.value; savePrefs(); render(); }
     if (t.id === "pRep") { ui.partnerRep = t.value; render(); }
     if (t.id === "bonusYear") { ui.bonusYear = +t.value; render(); }
+    if (t.id === "detYear") { ui.detYear = +t.value; render(); }
+    if (t.id === "detRep") { ui.detRep = t.value; render(); }
     if (t.id === "fType") { ui.fType = t.value; render(); }
     if (t.id === "fProd") { ui.fProd = t.value; render(); }
     if (t.id === "teamYear") { ui.teamYear = +t.value; render(); }
@@ -1608,6 +1699,10 @@ form.stack { display: grid; gap: 12px; }
   });
 
   document.addEventListener("input", e => {
+    if (e.target.id === "detQ") {
+      ui.detQ = e.target.value; const pos = e.target.selectionStart; renderDetail();
+      const n = $("#detQ"); n.focus(); try { n.setSelectionRange(pos, pos); } catch {}
+    }
     if (e.target.id === "entryQ") {
       ui.entryQ = e.target.value;
       const pos = e.target.selectionStart;
