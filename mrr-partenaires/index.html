@@ -3,15 +3,20 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <style>
-/* Layout: dark brand header with tabs, then a single 1200px column; dashboard = filters row, KPI strip, two charts, detail tables. */
+/* Layout: white sidebar (logo + section menu) on the left, slim top bar, then a fluid content column of bordered white cards. */
 :root {
-  --bg: #f4f7f8;
+  --bg: #f3f5f7;
   --surface: #ffffff;
-  --surface-2: #eef3f4;
-  --fg: #2a2536;
-  --fg-2: #5b5668;
-  --muted: #8a8696;
-  --line: #e1e6e9;
+  --surface-2: #eef2f4;
+  --fg: #1f2a37;
+  --fg-2: #4f5b67;
+  --muted: #7f8a96;
+  --line: #e3e8ec;
+  --cmp: #b4bec6;
+  --green: #1e9e4a;
+  --c-cur: #00a5b5;
+  --c-prev: #7fbfc8;
+  --c-down: #b8327a;
   --teal: #00a5b5;
   --teal-ink: #00798a;
   --teal-soft: #d6f1f3;
@@ -26,24 +31,25 @@
   --good-bg: #e2f4ea;
   --warn-bg: #fdf0dc;
   --bad-bg: #fbe6e4;
-  --shadow: 0 1px 2px rgba(42, 37, 54, .06), 0 6px 20px rgba(42, 37, 54, .06);
+  --shadow: 0 1px 2px rgba(31, 42, 55, .05);
+  --pop: 0 4px 24px rgba(31, 42, 55, .12);
   --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --r: 6px;
+  --r: 10px;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #18151f; --surface: #221e2c; --surface-2: #2b2637; --fg: #eeecf3; --fg-2: #b9b5c4; --muted: #8d889b;
-    --line: #363042; --teal: #1cb9c8; --teal-ink: #5fd3de; --teal-soft: #173c43; --orange: #ffa040; --orange-ink: #ffb466;
+    --bg: #121519; --surface: #1b2026; --surface-2: #242a31; --fg: #e9edf1; --fg-2: #b3bcc5; --muted: #8a949e;
+    --line: #2e353d; --teal: #1cb9c8; --teal-ink: #5fd3de; --teal-soft: #163b40; --orange: #ffa040; --orange-ink: #ffb466;
     --plum: #d05aa9; --brand-dark: #2b2538; --on-dark: #ffffff; --good: #4fc88d; --warn: #f0a845; --bad: #f07a70;
-    --good-bg: #183528; --warn-bg: #3a2a12; --bad-bg: #3d1d1b; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.25);
+    --good-bg: #183528; --warn-bg: #3a2a12; --bad-bg: #3d1d1b; --shadow: 0 1px 2px rgba(0,0,0,.3); --pop: 0 6px 24px rgba(0,0,0,.45); --cmp: #5c6873; --green: #4fc88d; --c-cur: #17a8b7; --c-prev: #2f7a83; --c-down: #dc6587;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #18151f; --surface: #221e2c; --surface-2: #2b2637; --fg: #eeecf3; --fg-2: #b9b5c4; --muted: #8d889b;
-  --line: #363042; --teal: #1cb9c8; --teal-ink: #5fd3de; --teal-soft: #173c43; --orange: #ffa040; --orange-ink: #ffb466;
+  --bg: #121519; --surface: #1b2026; --surface-2: #242a31; --fg: #e9edf1; --fg-2: #b3bcc5; --muted: #8a949e;
+  --line: #2e353d; --teal: #1cb9c8; --teal-ink: #5fd3de; --teal-soft: #163b40; --orange: #ffa040; --orange-ink: #ffb466;
   --plum: #d05aa9; --brand-dark: #2b2538; --on-dark: #ffffff; --good: #4fc88d; --warn: #f0a845; --bad: #f07a70;
-  --good-bg: #183528; --warn-bg: #3a2a12; --bad-bg: #3d1d1b; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.25);
+  --good-bg: #183528; --warn-bg: #3a2a12; --bad-bg: #3d1d1b; --shadow: 0 1px 2px rgba(0,0,0,.3); --pop: 0 6px 24px rgba(0,0,0,.45); --cmp: #5c6873; --green: #4fc88d; --c-cur: #17a8b7; --c-prev: #2f7a83; --c-down: #dc6587;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -51,26 +57,49 @@ body { background: var(--bg); color: var(--fg); font-family: var(--font); font-s
 table, input, select, button { font: inherit; color: inherit; }
 .num, td.n, th.n { font-variant-numeric: tabular-nums; }
 
-/* Header */
-.top { background: var(--brand-dark); color: var(--on-dark); }
-.top-in { max-width: 1200px; margin: 0 auto; padding: 18px 16px 0; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
-.brand { display: flex; align-items: center; gap: 12px; padding-bottom: 14px; }
-.mark { width: 34px; height: 34px; border-radius: 8px; background: var(--teal); position: relative; flex: none; }
-.mark::after { content: ""; position: absolute; right: -4px; bottom: -4px; width: 14px; height: 14px; border-radius: 50%; background: var(--orange); border: 3px solid var(--brand-dark); }
-.brand h1 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -.01em; line-height: 1.1; }
-.brand p { margin: 2px 0 0; font-size: 12px; opacity: .72; }
-.tabs { display: flex; gap: 4px; overflow-x: auto; }
-.tab { background: transparent; border: 0; color: var(--on-dark); opacity: .72; padding: 10px 14px 12px; cursor: pointer; font-weight: 600; border-bottom: 3px solid transparent; white-space: nowrap; }
-.tab:hover { opacity: 1; }
-.tab[aria-selected="true"] { opacity: 1; border-bottom-color: var(--orange); }
-.tab:focus-visible { outline: 2px solid var(--orange); outline-offset: -2px; }
+/* Shell: sidebar + content */
+.shell { display: grid; grid-template-columns: 244px minmax(0, 1fr); min-height: 100vh; }
+.side { position: sticky; top: 0; height: 100vh; min-width: 0; overflow: hidden; background: var(--surface); border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; padding: 16px 12px; z-index: 20; }
+.logo { display: flex; align-items: center; gap: 10px; padding: 4px 8px 18px; }
+.logo svg { width: 34px; height: 34px; flex: none; }
+.logo b { font-size: 15px; font-weight: 800; letter-spacing: -.01em; line-height: 1.15; }
+.logo small { display: block; font-size: 11px; font-weight: 500; color: var(--muted); }
+.side nav { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; min-width: 0; }
+.side .sep { height: 1px; background: var(--line); margin: 8px 6px; }
+.tab { display: flex; align-items: center; gap: 12px; width: 100%; background: transparent; border: 0; color: var(--fg-2); padding: 9px 10px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 13.5px; line-height: 1.25; text-align: left; min-width: 0; }
+.tab span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.tab svg { width: 20px; height: 20px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tab:hover { background: var(--surface-2); color: var(--fg); }
+.tab[aria-current="page"] { background: var(--teal); color: #fff; }
+.tab:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+.side-foot { margin-top: auto; padding: 10px 8px 0; font-size: 11px; color: var(--muted); line-height: 1.4; }
+.topbar { position: sticky; top: 0; z-index: 15; background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); padding: 12px 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 20px; }
+.topbar h1 { margin: 0; font-size: 18px; font-weight: 800; letter-spacing: -.01em; }
+.topbar p { margin: 0; font-size: 12px; color: var(--fg-2); }
+.topbar .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--teal-ink); background: var(--teal-soft); border-radius: 999px; padding: 4px 10px; }
+@media (max-width: 1100px) {
+  .shell { grid-template-columns: 72px minmax(0, 1fr); }
+  .side { padding: 14px 10px; align-items: center; }
+  .logo { padding: 2px 0 14px; }
+  .logo div, .tab span, .side-foot { display: none; }
+  .tab { justify-content: center; padding: 11px; width: 48px; }
+}
+@media (max-width: 640px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .side { position: fixed; top: auto; bottom: 0; left: 0; right: 0; height: auto; flex-direction: row; padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)); border-right: 0; border-top: 1px solid var(--line); overflow-x: auto; }
+  .side nav { display: flex; gap: 4px; }
+  .logo, .side .sep { display: none; }
+  .topbar { padding: 10px 16px; }
+  main { padding-bottom: 96px !important; }
+}
 
-main { max-width: 1200px; margin: 0 auto; padding: 20px 16px 48px; display: grid; gap: 20px; }
+main { width: 100%; max-width: 1440px; margin: 0 auto; padding: 20px 24px 48px; display: grid; gap: 20px; }
+@media (max-width: 640px) { main { padding: 16px 16px 48px; } }
 main > section, main > div { min-width: 0; }
 .banner { padding: 10px 14px; border-radius: var(--r); background: var(--warn-bg); color: var(--fg); font-size: 13px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
 .banner.info { background: var(--teal-soft); }
 
-.card { background: var(--surface); border-radius: var(--r); box-shadow: var(--shadow); padding: 18px 20px; min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); padding: 18px 20px; min-width: 0; }
 .card h2 { margin: 0 0 4px; font-size: 16px; font-weight: 700; text-wrap: balance; }
 .card .sub { margin: 0 0 14px; color: var(--fg-2); font-size: 13px; }
 .label { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
@@ -102,8 +131,11 @@ tr:hover .del-btn.icon, .del-btn.icon:focus-visible, .del-btn.armed { opacity: 1
 
 /* KPI strip */
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
-.kpi { background: var(--surface); border-radius: var(--r); box-shadow: var(--shadow); padding: 14px 18px; display: grid; gap: 2px; align-content: start; }
-.kpi .v { font-size: 28px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); padding: 14px 18px; display: grid; gap: 2px; align-content: start; }
+.kpi .v { font-size: 28px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1.2; color: var(--teal-ink); }
+.kpi.k2 .v { color: var(--green); }
+.kpi.k3 .v { color: var(--orange-ink); }
+.kpi.k4 .v { color: var(--fg); }
 .kpi .d { font-size: 12px; color: var(--fg-2); }
 .meter { height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; margin-top: 8px; }
 .meter i { display: block; height: 100%; background: var(--teal); border-radius: 3px; }
@@ -113,8 +145,8 @@ tr:hover .del-btn.icon, .del-btn.icon:focus-visible, .del-btn.armed { opacity: 1
 .chip.warn { background: var(--warn-bg); color: var(--warn); }
 .chip.bad { background: var(--bad-bg); color: var(--bad); }
 
-.grid2 { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 20px; }
-@media (max-width: 900px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+.grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
+@media (max-width: 1280px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
 
 /* Rep bars */
 .reps { display: grid; gap: 4px; }
@@ -135,7 +167,27 @@ tr:hover .del-btn.icon, .del-btn.icon:focus-visible, .del-btn.armed { opacity: 1
 /* SVG chart */
 .chart-wrap { position: relative; }
 .chart-wrap svg { display: block; width: 100%; height: auto; overflow: visible; }
-.chart-wrap text { fill: var(--muted); font-size: 11px; font-family: var(--font); }
+.chart-wrap text { font-family: var(--font); }
+.chart-wrap text:not([fill]) { fill: var(--muted); font-size: 11px; }
+.hov .guide { opacity: 0; transition: opacity .1s; }
+.hov:hover .guide { opacity: 1; }
+.chart-card { display: flex; flex-direction: column; }
+.chart-card .chart-wrap { flex: 1; }
+.cc-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px 14px; flex-wrap: wrap; }
+.cc-head > div:first-child { min-width: 0; flex: 1 1 260px; }
+.dl { display: inline-flex; gap: 4px; flex: none; }
+.btn.sm { min-height: 28px; padding: 3px 9px; font-size: 12px; border-radius: 6px; color: var(--fg-2); }
+.btn.sm:hover { color: var(--teal-ink); }
+.fbar { padding: 14px 18px; }
+.cmp-note { margin: 10px 0 0; font-size: 12px; color: var(--fg-2); }
+.dchip { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 700; padding: 1px 7px; border-radius: 999px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dchip.up { background: var(--good-bg); color: var(--good); }
+.dchip.down { background: var(--bad-bg); color: var(--bad); }
+.dchip.flat { background: var(--surface-2); color: var(--fg-2); }
+.sort { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; cursor: pointer; white-space: nowrap; }
+.sort:hover { color: var(--teal-ink); }
+.evo-wrap { max-height: 560px; overflow: auto; }
+table.evo thead th { position: sticky; top: 0; background: var(--surface); z-index: 1; }
 .tip { position: fixed; z-index: 50; pointer-events: none; background: var(--brand-dark); color: var(--on-dark); padding: 8px 10px; border-radius: 5px; font-size: 12px; line-height: 1.45; box-shadow: var(--shadow); max-width: 240px; }
 .tip b { font-weight: 700; }
 
@@ -198,7 +250,7 @@ form.stack { display: grid; gap: 12px; }
 .strip i { width: 12px; height: 16px; border-radius: 2px; background: var(--surface-2); }
 .strip i.on { background: var(--teal); }
 .foot { margin: 0; font-size: 12px; color: var(--muted); text-align: center; }
-.upd { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 28px; background: var(--surface); border-radius: var(--r); box-shadow: var(--shadow); padding: 12px 18px; border-left: 4px solid var(--teal); }
+.upd { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 28px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); padding: 12px 18px; border-left: 4px solid var(--teal); }
 .upd > div { display: grid; gap: 2px; min-width: 0; }
 .upd .btn { margin-left: auto; }
 .pos { color: var(--good); }
@@ -235,38 +287,40 @@ form.stack { display: grid; gap: 12px; }
 }
 </style>
 
-<header class="top">
-  <div class="top-in">
-    <div class="brand">
-      <div class="mark" aria-hidden="true"></div>
-      <div>
-        <h1>MRR Partenaires</h1>
-        <p>Objectif de MRR par commercial ce mois-ci : <span id="hdrTarget">500 €</span><span id="hdrUpdated"></span></p>
-      </div>
+<div class="shell">
+  <aside class="side">
+    <div class="logo">
+      <svg viewBox="0 0 34 34" aria-hidden="true"><circle cx="14" cy="21" r="7.2" fill="none" stroke="var(--teal)" stroke-width="4.6"/><rect x="21.2" y="3" width="4.6" height="25.5" rx="2.3" fill="var(--teal)"/></svg>
+      <div><b>Suivi MRR</b><small>Partenaires</small></div>
     </div>
-    <nav class="tabs" role="tablist" aria-label="Sections">
-      <button class="tab" role="tab" id="tab-dash" data-tab="dash" aria-selected="true">Tableau de bord</button>
-      <button class="tab" role="tab" id="tab-bonus" data-tab="bonus" aria-selected="false">Suivi MRR par commercial</button>
-      <button class="tab" role="tab" id="tab-entry" data-tab="entry" aria-selected="false">Saisie MRR mensuel</button>
-      <button class="tab" role="tab" id="tab-partners" data-tab="partners" aria-selected="false">Partenaires</button>
-      <button class="tab" role="tab" id="tab-team" data-tab="team" aria-selected="false">Équipe &amp; objectifs</button>
-      <button class="tab" role="tab" id="tab-detail" data-tab="detail" aria-selected="false" hidden>Détail MRR</button>
-      <button class="tab" role="tab" id="tab-visits" data-tab="visits" aria-selected="false" hidden>Connexions</button>
+    <nav aria-label="Sections">
+      <button class="tab" id="tab-dash" data-tab="dash" title="Tableau de bord"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Tableau de bord</span></button>
+      <button class="tab" id="tab-bonus" data-tab="bonus" title="Suivi MRR par commercial"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg><span>Suivi MRR par commercial</span></button>
+      <button class="tab" id="tab-entry" data-tab="entry" title="Saisie MRR mensuel"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/><path d="M3.5 9.5h17M9.5 3.5v17"/></svg><span>Saisie MRR mensuel</span></button>
+      <button class="tab" id="tab-partners" data-tab="partners" title="Partenaires"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c.6-3.6 3.3-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 5.2a3.3 3.3 0 0 1 0 6.6M18.5 14.8c1.7.7 2.8 2.4 3 5.2"/></svg><span>Partenaires</span></button>
+      <button class="tab" id="tab-team" data-tab="team" title="Équipe &amp; objectifs"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M4 12h16M4 18h7"/><circle cx="17" cy="6" r="2.2"/><circle cx="14" cy="18" r="2.2"/></svg><span>Équipe &amp; objectifs</span></button>
+      <button class="tab" id="tab-detail" data-tab="detail" title="Détail MRR" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7.5L19 8v12.5H7z"/><path d="M14 3.5V8h5M10 13h6M10 17h6"/></svg><span>Détail MRR</span></button>
+      <button class="tab" id="tab-visits" data-tab="visits" title="Connexions" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>Connexions</span></button>
     </nav>
+    <p class="side-foot">Les consultations de cette page (personne, date) sont enregistrées pour le suivi de l'équipe. Seuls les administrateurs de la page les voient.</p>
+  </aside>
+  <div>
+    <header class="topbar">
+      <div><h1 id="pageTitle">Tableau de bord</h1><p><span id="hdrUpdated"></span></p></div>
+      <span class="pill">Objectif du mois par commercial : <span id="hdrTarget">500 €</span></span>
+    </header>
+    <main id="app">
+      <div id="banner"></div>
+      <section id="view-dash"></section>
+      <section id="view-bonus" hidden></section>
+      <section id="view-entry" hidden></section>
+      <section id="view-partners" hidden></section>
+      <section id="view-team" hidden></section>
+      <section id="view-visits" hidden></section>
+      <section id="view-detail" hidden></section>
+    </main>
   </div>
-</header>
-
-<main id="app">
-  <div id="banner"></div>
-  <section id="view-dash"></section>
-  <section id="view-bonus" hidden></section>
-  <section id="view-entry" hidden></section>
-  <section id="view-partners" hidden></section>
-  <section id="view-team" hidden></section>
-  <section id="view-visits" hidden></section>
-  <section id="view-detail" hidden></section>
-  <p class="foot">Les consultations de cette page (personne, date) sont enregistrées pour le suivi de l'équipe. Seuls les administrateurs de la page les voient.</p>
-</main>
+</div>
 <div class="tip" id="tip" hidden></div>
 <div id="modalRoot"></div>
 <div id="pickRoot"></div>
@@ -324,9 +378,12 @@ form.stack { display: grid; gap: 12px; }
     fType: "all",
     fProd: "all",
     fHs: "all",
-    partnerQ: ""
+    partnerQ: "",
+    cmp: prefs.cmp || "prev",
+    evoSort: { k: "c", dir: "desc" },
+    evoQ: ""
   };
-  const savePrefs = () => safeLS.set("mrr-ui", { tab: ui.tab, gran: ui.gran, entryRep: ui.entryRep });
+  const savePrefs = () => safeLS.set("mrr-ui", { tab: ui.tab, gran: ui.gran, entryRep: ui.entryRep, cmp: ui.cmp });
 
   // ---------- backend (shared db, or this browser as fallback) ----------
   let db = null, downloads = null, userApi = null;
@@ -588,11 +645,12 @@ form.stack { display: grid; gap: 12px; }
   function render() {
     $("#hdrTarget").textContent = fmt(targetFor(CUR));
     const lu = lastUpdate();
-    $("#hdrUpdated").textContent = lu ? " · données mises à jour le " + new Date(lu).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) : "";
+    $("#hdrUpdated").textContent = lu ? "Données mises à jour le " + new Date(lu).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) : "";
     $("#tab-visits").hidden = !S.isAdmin;
     $("#tab-detail").hidden = !S.isAdmin;
     if ((ui.tab === "visits" || ui.tab === "detail") && !S.isAdmin && S.mode !== "loading") ui.tab = "dash";
-    $$(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.tab === ui.tab)));
+    $$(".tab").forEach(t => { if (t.dataset.tab === ui.tab) t.setAttribute("aria-current", "page"); else t.removeAttribute("aria-current"); });
+    const cur = $("#tab-" + ui.tab); $("#pageTitle").textContent = cur ? cur.textContent.trim() : "";
     ["dash", "bonus", "entry", "partners", "team", "visits", "detail"].forEach(v => { const el = $("#view-" + v); el.hidden = v !== ui.tab; if (el.hidden) el.innerHTML = ""; });
     renderBanner();
     if (ui.tab === "dash") renderDash();
@@ -620,6 +678,153 @@ form.stack { display: grid; gap: 12px; }
   }
 
   // ----- Dashboard -----
+  // comparison baseline: an earlier period, or the data as it stood N days ago (rebuilt from the change log)
+  const RESET_SRC = "Remise à zéro";
+  function cmpModes() {
+    const prev = { month: "Mois précédent", quarter: "Trimestre précédent", year: "Année précédente" }[ui.gran];
+    return [...(prev ? [["prev", prev], ["yoy", "Même période l'an dernier"]] : []), ["w1", "Semaine dernière (données à J-7)"], ["m1", "Mois dernier (données à J-30)"]];
+  }
+  const monthsLabel = ks => !ks.length ? "—" : ks.length === 1 ? mLong(ks[0]) : ks.length === 3 && mOf(ks[0]) % 3 === 1 ? `T${qOf(ks[0])} ${yOf(ks[0])}` : ks.length === 12 && mOf(ks[0]) === 1 ? String(yOf(ks[0])) : `${mLabel(ks[0])} – ${mLabel(ks[ks.length - 1])}`;
+  function comparison(months) {
+    const modes = cmpModes();
+    if (!modes.some(m => m[0] === ui.cmp)) ui.cmp = modes[0][0];
+    if (ui.cmp === "prev" || ui.cmp === "yoy") {
+      // a period still in progress is compared "à date": same number of elapsed months
+      const el = months.filter(k => k <= CUR), n = ui.cmp === "yoy" ? 12 : months.length;
+      const cm = el.map(k => addM(k, -n));
+      const partial = el.length < months.length;
+      return { months: cm, val: mrrOf, label: monthsLabel(cm) + (partial ? " (à date)" : ""), short: ui.cmp === "yoy" ? "N-1" : "période préc." };
+    }
+    const days = ui.cmp === "w1" ? 7 : 30, cutoff = Date.now() - days * 864e5;
+    // first logged change after the cutoff for each partner × month holds the value at the cutoff
+    const first = new Map();
+    for (const u of S.updates) for (const c of (u.changes || [])) {
+      if (c.t !== "mrr" || !(+c.at >= cutoff)) continue;
+      const key = c.pid + "|" + c.m, prev = first.get(key);
+      if (!prev || +c.at < +prev.at) first.set(key, c);
+    }
+    const val = (p, k) => {
+      if ((+p.createdAt || 0) >= cutoff) return 0;
+      const c = first.get(p.id + "|" + k);
+      // the October 2026 reset cancelled the earlier figures: never resurrect them
+      return !c ? mrrOf(p, k) : c.src === RESET_SRC ? 0 : +c.o || 0;
+    };
+    return { months, val, label: "données au " + new Date(cutoff).toLocaleDateString("fr-FR", { day: "numeric", month: "long" }), short: ui.cmp === "w1" ? "J-7" : "J-30" };
+  }
+  const sumP = (p, ks, f = mrrOf) => ks.reduce((t, k) => t + f(p, k), 0);
+  const cmpSum = (cmp, p) => sumP(p, cmp.months, cmp.val);
+  const evo = (c, b) => b ? (c - b) / b : c ? Infinity : NaN;
+  const pct1 = r => (r > 0 ? "+" : r < 0 ? "−" : "") + Math.abs(r * 100).toLocaleString("fr-FR", { maximumFractionDigits: 1 }) + " %";
+  function dchip(c, b) {
+    const r = evo(c, b);
+    if (!isFinite(r) && isNaN(r)) return `<span class="muted">—</span>`;
+    if (r === Infinity) return `<span class="dchip up" title="Pas de MRR sur la période de comparaison">Nouveau</span>`;
+    const cls = r > 0.0005 ? "up" : r < -0.0005 ? "down" : "flat";
+    return `<span class="dchip ${cls}"><span aria-hidden="true">${cls === "up" ? "▲" : cls === "down" ? "▼" : "="}</span>${pct1(r)}</span>`;
+  }
+  const dtext = (c, b) => { const r = evo(c, b); return r === Infinity ? "nouveau" : isFinite(r) ? pct1(r) : ""; };
+
+  // ----- SVG chart builders (shared by screen and export) -----
+  const CH = {};
+  const trunc = (s, n) => s.length > n ? s.slice(0, n - 1) + "…" : s;
+  const T = (x, y, txt, a = "") => `<text x="${x}" y="${y}" ${a}>${txt}</text>`;
+  const barPath = (x, y, w, h, r) => { r = Math.min(r, w, h / 2); return w <= 0 ? "" : `<path d="M${x},${y} H${x + w - r} Q${x + w},${y} ${x + w},${y + r} V${y + h - r} Q${x + w},${y + h} ${x + w - r},${y + h} H${x} Z"/>`; };
+  const barPathL = (x, y, w, h, r) => { r = Math.min(r, w, h / 2); return w <= 0 ? "" : `<path d="M${x},${y} H${x - w + r} Q${x - w},${y} ${x - w},${y + r} V${y + h - r} Q${x - w},${y + h} ${x - w + r},${y + h} H${x} Z"/>`; };
+  const colPath = (x, y0, w, y1, r) => { const h = y0 - y1; r = Math.min(r, w / 2, h); return h <= 0 ? "" : `<path d="M${x},${y0} V${y1 + r} Q${x},${y1} ${x + r},${y1} H${x + w - r} Q${x + w},${y1} ${x + w},${y1 + r} V${y0} Z"/>`; };
+  const svgWrap = (W, H, body, label) => `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}">${body}</svg>`;
+
+  // horizontal bars: one row per item, optional comparison bar and target tick
+  function hbars(rows, o = {}) {
+    if (!rows.length) return `<div class="empty">Aucune donnée pour ces filtres.</div>`;
+    const W = 580, L = o.labelW || 150, R = 130, cmp = !!o.cmp, rowH = cmp ? 36 : 30, T0 = 4;
+    const H = T0 + rows.length * rowH + 4;
+    const max = Math.max(1, ...rows.map(r => Math.max(r.v, cmp ? r.b : 0, r.t || 0))) * 1.04;
+    const x = v => L + (W - L - R) * v / max;
+    let g = `<line x1="${L}" x2="${L}" y1="${T0}" y2="${H - 4}" stroke="var(--line)"/>`;
+    rows.forEach((r, i) => {
+      const y = T0 + i * rowH, bh = cmp ? 11 : 14;
+      const by = cmp ? y + rowH / 2 - bh - 1 : y + (rowH - bh) / 2;
+      g += T(L - 10, y + rowH / 2 + 4, esc(trunc(r.label, o.labelChars || 22)), `text-anchor="end" fill="var(--fg)" font-size="12"`);
+      g += `<g fill="var(--c-cur)">${barPath(L, by, x(r.v) - L, bh, 4)}</g>`;
+      if (cmp) g += `<g fill="var(--c-prev)">${barPath(L, by + bh + 2, x(r.b) - L, bh, 4)}</g>`;
+      if (r.t) g += `<line x1="${x(r.t)}" x2="${x(r.t)}" y1="${y + 4}" y2="${y + rowH - 4}" stroke="var(--orange)" stroke-width="2"/>`;
+      const vx = W - R + 10;
+      g += T(vx, y + rowH / 2 + (r.note ? -1 : 4), esc(fmt(r.v)), `fill="var(--fg)" font-size="12" font-weight="600"`);
+      if (r.note) g += T(vx, y + rowH / 2 + 12, esc(r.note), `fill="${r.noteTone ? `var(--${r.noteTone})` : "var(--fg-2)"}" font-size="10.5"`);
+      g += `<rect x="0" y="${y}" width="${W}" height="${rowH}" fill="transparent" data-tip="${esc(r.tip || "")}"/>`;
+    });
+    return svgWrap(W, H, g, o.aria || "Graphique en barres");
+  }
+  // diverging bars around zero: increases to the right, decreases to the left
+  function divbars(rows) {
+    if (!rows.length) return `<div class="empty">Aucune variation sur ces filtres.</div>`;
+    const W = 640, L = 170, R = 16, rowH = 28, T0 = 18, H = T0 + rows.length * rowH + 6;
+    const m = Math.max(1, ...rows.map(r => Math.abs(r.d)));
+    const mid = L + (W - L - R) / 2, half = (W - L - R) / 2 - 64;
+    let g = T(mid - 6, 11, "Baisse", `text-anchor="end" fill="var(--fg-2)" font-size="11"`) + T(mid + 6, 11, "Hausse", `fill="var(--fg-2)" font-size="11"`);
+    rows.forEach((r, i) => {
+      const y = T0 + i * rowH, w = Math.max(2, half * Math.abs(r.d) / m), up = r.d >= 0;
+      g += T(L - 10, y + rowH / 2 + 4, esc(trunc(r.label, 24)), `text-anchor="end" fill="var(--fg)" font-size="12"`);
+      g += `<g fill="var(${up ? "--c-cur" : "--c-down"})">${up ? barPath(mid, y + 7, w, rowH - 14, 4) : barPathL(mid, y + 7, w, rowH - 14, 4)}</g>`;
+      g += T(up ? mid + w + 6 : mid - w - 6, y + rowH / 2 + 4, esc(signed(r.d)), `${up ? "" : 'text-anchor="end"'} fill="var(--fg)" font-size="11.5" font-weight="600"`);
+      g += `<rect x="0" y="${y}" width="${W}" height="${rowH}" fill="transparent" data-tip="${esc(r.tip)}"/>`;
+    });
+    g += `<line x1="${mid}" x2="${mid}" y1="${T0 - 2}" y2="${H - 4}" stroke="var(--fg-2)" stroke-width="1"/>`;
+    return svgWrap(W, H, g, "Plus fortes variations par partenaire");
+  }
+  // vertical columns per month, optional comparison columns and stepped target line
+  function columns(ctx, vals, o = {}) {
+    const W = o.W || 640, H = o.H || 260, L = 56, R = 10, T0 = 14, B = 28;
+    const top = niceMax(Math.max(1, ...vals, ...(o.cmp || []), ...(o.target || [])));
+    const y = v => T0 + (H - T0 - B) * (1 - v / top);
+    const bw = (W - L - R) / ctx.length, sel = new Set(o.sel || ctx);
+    let g = "";
+    for (let i = 0; i <= 4; i++) {
+      const v = top * i / 4, yy = y(v);
+      g += `<line x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}" stroke="var(--line)" ${i ? 'stroke-dasharray="2 3"' : ""}/>`;
+      g += T(L - 8, yy + 4, o.int ? String(Math.round(v)) : fmtK(v), `text-anchor="end" fill="var(--muted)" font-size="11"`);
+    }
+    const every = ctx.length > 12 ? Math.ceil(ctx.length / 12) : 1;
+    ctx.forEach((k, i) => {
+      const x = L + i * bw, two = !!o.cmp, cw = Math.max(2, (bw - 8) / (two ? 2 : 1) - (two ? 1 : 0));
+      const op = sel.has(k) ? 1 : 0.35;
+      g += `<g fill="var(--c-cur)" opacity="${op}">${colPath(x + 4, y(0), cw, y(vals[i]), 4)}</g>`;
+      if (two) g += `<g fill="var(--c-prev)" opacity="${op}">${colPath(x + 4 + cw + 2, y(0), cw, y(o.cmp[i]), 4)}</g>`;
+      if (i % every === 0) g += T(x + bw / 2, H - 8, ctx.length > 12 ? mLabel(k) : MONTHS[mOf(k) - 1], `text-anchor="middle" fill="${sel.has(k) ? "var(--fg)" : "var(--muted)"}" font-size="11"${sel.has(k) ? ' font-weight="600"' : ""}`);
+      g += `<rect x="${x}" y="${T0}" width="${bw}" height="${H - T0 - B}" fill="transparent" data-tip="${esc(o.tip(k, i))}"/>`;
+    });
+    if (o.target) g += `<path d="${o.target.map((t, i) => `${i ? "L" : "M"}${L + i * bw},${y(t)} H${L + (i + 1) * bw}`).join(" ")}" fill="none" stroke="var(--orange)" stroke-width="2" stroke-dasharray="6 4" pointer-events="none"/>`;
+    return svgWrap(W, H, g, o.aria || "Graphique mensuel");
+  }
+  // cumulative lines with a hover guide
+  function cumLines(ctx, cum, tcum) {
+    const W = 640, H = 260, L = 56, R = 70, T0 = 14, B = 28;
+    const top = niceMax(Math.max(1, ...cum.filter(v => v !== null), ...tcum));
+    const y = v => T0 + (H - T0 - B) * (1 - v / top);
+    const step = (W - L - R) / Math.max(1, ctx.length - 1), x = i => L + i * step;
+    let g = "";
+    for (let i = 0; i <= 4; i++) { const v = top * i / 4; g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" ${i ? 'stroke-dasharray="2 3"' : ""}/>` + T(L - 8, y(v) + 4, fmtK(v), `text-anchor="end" fill="var(--muted)" font-size="11"`); }
+    ctx.forEach((k, i) => { g += T(x(i), H - 8, MONTHS[mOf(k) - 1], `text-anchor="middle" fill="var(--muted)" font-size="11"`); });
+    const pts = cum.map((v, i) => v === null ? null : [x(i), y(v)]).filter(Boolean);
+    g += `<path d="${tcum.map((v, i) => `${i ? "L" : "M"}${x(i)},${y(v)}`).join(" ")}" fill="none" stroke="var(--orange)" stroke-width="2" stroke-dasharray="6 4"/>`;
+    if (pts.length) g += `<path d="${pts.map((p, i) => `${i ? "L" : "M"}${p[0]},${p[1]}`).join(" ")}" fill="none" stroke="var(--c-cur)" stroke-width="2.5" stroke-linejoin="round"/>`;
+    const lastI = cum.map(v => v !== null).lastIndexOf(true);
+    if (lastI >= 0) g += `<circle cx="${x(lastI)}" cy="${y(cum[lastI])}" r="4" fill="var(--c-cur)" stroke="var(--surface)" stroke-width="2"/>` + T(x(lastI) + 8, y(cum[lastI]) + 4, "Réalisé", `fill="var(--fg)" font-size="11" font-weight="600"`);
+    g += T(x(ctx.length - 1) + 8, y(tcum[tcum.length - 1]) + 4, "Objectif", `fill="var(--fg-2)" font-size="11"`);
+    ctx.forEach((k, i) => {
+      const x0 = x(i) - step / 2;
+      g += `<g class="hov"><line class="guide" x1="${x(i)}" x2="${x(i)}" y1="${T0}" y2="${H - B}" stroke="var(--fg-2)" stroke-width="1"/>${cum[i] !== null ? `<circle class="guide" cx="${x(i)}" cy="${y(cum[i])}" r="4.5" fill="var(--c-cur)" stroke="var(--surface)" stroke-width="2"/>` : ""}<rect x="${x0}" y="${T0}" width="${step}" height="${H - T0 - B}" fill="transparent" data-tip="<b>Fin ${esc(mLong(k))}</b><br>Cumul réalisé : ${cum[i] === null ? "à venir" : fmt(cum[i])}<br>Cumul objectif : ${fmt(tcum[i])}${cum[i] !== null && tcum[i] ? `<br>Atteinte : ${pct(cum[i] / tcum[i])}` : ""}"/></g>`;
+    });
+    return svgWrap(W, H, g, "Cumul annuel du MRR face à l'objectif cumulé");
+  }
+  function chartCard(id, title, sub, body, legend, rows) {
+    CH[id] = { title, sub, legend: legend || [], rows: rows || [] };
+    const lg = (legend || []).map(l => `<span><i class="${l.kind || ""}" style="${l.kind ? "" : `background:var(${l.color})`}"></i>${esc(l.label)}</span>`).join("");
+    return `<div class="card chart-card"><div class="cc-head"><div><h2>${esc(title)}</h2><p class="sub">${esc(sub)}</p></div>
+      <div class="dl" role="group" aria-label="Télécharger ${esc(title)}"><button class="btn sm" data-dl="${id}" data-fmt="png" title="Télécharger l'image (PNG)">↓ PNG</button><button class="btn sm" data-dl="${id}" data-fmt="svg" title="Télécharger l'image vectorielle (SVG)">SVG</button><button class="btn sm" data-dl="${id}" data-fmt="csv" title="Télécharger les données (CSV)">CSV</button></div></div>
+      <div class="chart-wrap" id="ch-${id}">${body}</div>${lg ? `<div class="legend">${lg}</div>` : ""}</div>`;
+  }
+
   function renderDash() {
     const el = $("#view-dash");
     if (!S.loaded) { el.innerHTML = ""; return; }
@@ -628,64 +833,115 @@ form.stack { display: grid; gap: 12px; }
     if (!ui.period || !opts.some(o => o[0] === ui.period)) ui.period = opts.some(o => o[0] === defaultPeriod(ui.gran)) ? defaultPeriod(ui.gran) : opts[0][0];
     const months = monthsOf(ui.gran, ui.period);
     const elapsed = months.filter(k => k <= CUR);
+    const cmp = comparison(months);
     const reps = scopeReps(months);
     const stats = reps.map(r => repStats(r, months));
     const repIds = new Set(reps.map(r => r.id));
+    const ps = FP().filter(p => repIds.has(p.repId));
     const total = stats.reduce((s, x) => s + x.mrr, 0);
+    const base = ps.reduce((s, p) => s + cmpSum(cmp, p), 0);
     const tgt = stats.reduce((s, x) => s + x.tgt, 0);
     const fullTgt = reps.filter(r => r.active !== false).length * sumTargets(months);
     const recruited = stats.reduce((s, x) => s + x.recruited, 0);
-    const activeP = FP().filter(p => repIds.has(p.repId) && months.some(k => mrrOf(p, k) > 0)).length;
+    const cmpPeriod = ui.cmp === "prev" || ui.cmp === "yoy";
+    const recruitedB = cmpPeriod ? ps.filter(p => p.recruited && cmp.months.includes(p.recruited)).length : null;
+    const activeP = ps.filter(p => months.some(k => mrrOf(p, k) > 0)).length;
+    const activeB = ps.filter(p => cmp.months.some(k => cmp.val(p, k) > 0)).length;
     const ratio = tgt ? total / tgt : NaN;
-    const perRepMonth = reps.length && elapsed.length ? total / (stats.filter(s => s.tgt).length || 1) / elapsed.length : 0;
     const remaining = Math.max(0, fullTgt - total);
     const pLabel = periodLabel(ui.gran, ui.period);
+    const who = ui.dashRep === "all" ? "l'équipe" : repName(ui.dashRep);
+    const scope = `${pLabel}${ui.dashRep !== "all" ? " · " + repName(ui.dashRep) : ""}${filtersOn() ? " · " + filterNote() : ""}`;
+    const vs = `vs ${cmp.label}`;
+
+    // per rep: current vs comparison
+    const repRows = stats.map(s => { const b = ps.filter(p => p.repId === s.rep.id).reduce((t, p) => t + cmpSum(cmp, p), 0); return { label: s.rep.name, v: s.mrr, b, t: s.tgt, s, note: s.tgt ? `${pct(s.ratio)} de l'objectif` : "sans objectif", noteTone: isFinite(s.ratio) ? (s.ratio >= 1 ? "good" : s.ratio >= 0.7 ? "warn" : "bad") : "", tip: `<b>${esc(s.rep.name)}</b><br>MRR : ${fmt(s.mrr)}<br>Objectif à date : ${s.tgt ? fmt(s.tgt) : "—"}${s.tgt ? ` (${pct(s.ratio)})` : ""}<br>${esc(vs)} : ${fmt(b)} ${dtext(s.mrr, b) ? "(" + dtext(s.mrr, b) + ")" : ""}<br>Partenaires recrutés : ${s.recruited} · productifs : ${s.partners}` }; });
+    // per partner type / product
+    const typeRows = [...PTYPES, ["", "Type non renseigné"]].map(([t, l]) => { const g = ps.filter(p => (p.ptype || "") === t); const v = g.reduce((s, p) => s + sumP(p, months), 0), b = g.reduce((s, p) => s + cmpSum(cmp, p), 0); return { label: l, v, b, note: dtext(v, b) ? `${dtext(v, b)} ${cmp.short}` : "", tip: `<b>${esc(l)}</b><br>MRR : ${fmt(v)}<br>${esc(vs)} : ${fmt(b)}<br>${g.filter(p => sumP(p, months) > 0).length} partenaire(s) productif(s)` }; }).filter(r => r.v || r.b);
+    const prodRows = [...catalog(), ""].map(pr => { const g = ps.filter(p => pr ? prods(p).includes(pr) : !prods(p).length); const v = g.reduce((s, p) => s + sumP(p, months), 0), b = g.reduce((s, p) => s + cmpSum(cmp, p), 0); return { label: pr || "Produit non renseigné", v, b, note: dtext(v, b) ? `${dtext(v, b)} ${cmp.short}` : "", tip: `<b>${esc(pr || "Produit non renseigné")}</b><br>MRR des partenaires qui le vendent : ${fmt(v)}<br>${esc(vs)} : ${fmt(b)}` }; }).filter(r => r.v || r.b).sort((a, b) => b.v - a.v);
+    // movers
+    const movers = ps.map(p => { const c = sumP(p, months), b = cmpSum(cmp, p); return { p, c, b, d: c - b }; }).filter(x => Math.abs(x.d) >= 0.005).sort((a, b) => Math.abs(b.d) - Math.abs(a.d)).slice(0, ui.moversN || 10)
+      .map(x => ({ label: x.p.name, d: x.d, c: x.c, b: x.b, rep: repName(x.p.repId), tip: `<b>${esc(x.p.name)}</b> · ${esc(repName(x.p.repId))}<br>MRR : ${fmt(x.c)}<br>${esc(vs)} : ${fmt(x.b)}<br>Écart : ${signed(x.d)}${dtext(x.c, x.b) ? " (" + dtext(x.c, x.b) + ")" : ""}` }));
+    // monthly context
+    const ctx = contextMonths(months);
+    const nAct = reps.filter(r => r.active !== false).length;
+    const mVals = ctx.map(k => ps.reduce((s, p) => s + mrrOf(p, k), 0));
+    const mPrev = ctx.map(k => ps.reduce((s, p) => s + mrrOf(p, addM(k, -12)), 0));
+    const showPrev = ui.cmp === "yoy" && mPrev.some(v => v > 0);
+    const mTgt = ctx.map(k => targetFor(k) * nAct);
+    let run = 0, trun = 0;
+    const cum = ctx.map((k, i) => k > CUR ? null : (run += mVals[i])), tcum = ctx.map((k, i) => (trun += mTgt[i]));
+    const recs = ctx.map(k => ps.filter(p => p.recruited === k).length);
 
     el.innerHTML = `
       <div style="display:grid;gap:20px">
       ${updateStrip()}
-      <div class="filters">
-        <div class="field"><span>Période</span>
-          <div class="seg" role="group" aria-label="Granularité">
-            ${[["month", "Mois"], ["quarter", "Trimestre"], ["year", "Année"], ["all", "Tout"]].map(([g, l]) => `<button data-gran="${g}" aria-pressed="${ui.gran === g}">${l}</button>`).join("")}
+      <div class="card fbar">
+        <div class="filters">
+          <div class="field"><span>Période</span>
+            <div class="seg" role="group" aria-label="Granularité">
+              ${[["month", "Mois"], ["quarter", "Trimestre"], ["year", "Année"], ["all", "Tout"]].map(([g, l]) => `<button data-gran="${g}" aria-pressed="${ui.gran === g}">${l}</button>`).join("")}
+            </div>
           </div>
+          ${ui.gran !== "all" ? `<label class="field"><span>${ui.gran === "month" ? "Mois" : ui.gran === "quarter" ? "Trimestre" : "Année"}</span>
+            <select id="periodSel">${opts.map(([v, l]) => `<option value="${v}" ${v === ui.period ? "selected" : ""}>${l}</option>`).join("")}</select></label>` : ""}
+          <label class="field"><span>Comparer à</span><select id="cmpSel">${cmpModes().map(([v, l]) => `<option value="${v}" ${v === ui.cmp ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+          <label class="field"><span>Commercial</span>
+            <select id="dashRep"><option value="all">Toute l'équipe</option>${sortedReps().map(r => `<option value="${r.id}" ${ui.dashRep === r.id ? "selected" : ""}>${esc(r.name)}${r.active === false ? " (inactif)" : ""}</option>`).join("")}</select></label>
+          ${filterFields()}
+          <div style="flex:1"></div>
+          <button class="btn" data-act="export">Exporter toutes les données (CSV)</button>
         </div>
-        ${ui.gran !== "all" ? `<label class="field"><span>${ui.gran === "month" ? "Mois" : ui.gran === "quarter" ? "Trimestre" : "Année"}</span>
-          <select id="periodSel">${opts.map(([v, l]) => `<option value="${v}" ${v === ui.period ? "selected" : ""}>${l}</option>`).join("")}</select></label>` : ""}
-        <label class="field"><span>Commercial</span>
-          <select id="dashRep"><option value="all">Toute l'équipe</option>${sortedReps().map(r => `<option value="${r.id}" ${ui.dashRep === r.id ? "selected" : ""}>${esc(r.name)}${r.active === false ? " (inactif)" : ""}</option>`).join("")}</select></label>
-        ${filterFields()}
-        <div style="flex:1"></div>
-        <button class="btn" data-act="export">Exporter en CSV</button>
+        <p class="cmp-note">Comparaison : <b>${esc(pLabel)}</b> face à <b>${esc(cmp.label)}</b>${ui.cmp === "w1" || ui.cmp === "m1" ? " — même période, telle qu'elle était saisie à cette date (d'après le journal des mises à jour)" : ""}.</p>
       </div>
 
       <div class="kpis">
         <div class="kpi"><span class="label">MRR nouveaux partenaires</span><span class="v">${fmt(total)}</span>
-          <span class="d">${esc(pLabel)}${ui.dashRep !== "all" ? " · " + esc(repName(ui.dashRep)) : ""}${filtersOn() ? ` · <b>filtre : ${esc(filterNote())}</b>` : ""}</span>
-          <span class="d">${(() => { const by = { operateur: 0, ambassadeur: 0, both: 0, reveil_operateur: 0, reveil_ambassadeur: 0, revendeur_microsoft: 0, "": 0 }; FP().filter(p => repIds.has(p.repId)).forEach(p => { by[p.ptype || ""] = (by[p.ptype || ""] || 0) + months.reduce((t, k) => t + mrrOf(p, k), 0); }); return `Opérateurs ${fmt(by.operateur)} · Ambassadeurs ${fmt(by.ambassadeur)} · Les deux ${fmt(by.both)} · Réveil opérateur ${fmt(by.reveil_operateur)} · Réveil ambassadeur ${fmt(by.reveil_ambassadeur)} · Revendeur Microsoft ${fmt(by.revendeur_microsoft)}${by[""] ? ` · Non renseigné ${fmt(by[""])}` : ""}`; })()}</span></div>
-        <div class="kpi"><span class="label">Atteinte objectif à date</span><span class="v">${isFinite(ratio) ? pct(ratio) : "—"}</span>
+          <span class="d">${dchip(total, base)} ${esc(vs)} (${fmt(base)})</span>
+          <span class="d">${esc(scope)}</span></div>
+        <div class="kpi k2"><span class="label">Atteinte objectif à date</span><span class="v">${isFinite(ratio) ? pct(ratio) : "—"}</span>
           <span class="d">Objectif à date ${fmt(tgt)} ${chip(ratio)}</span>
           <div class="meter" aria-hidden="true"><i style="width:${Math.min(100, (ratio || 0) * 100)}%"></i></div></div>
-        <div class="kpi"><span class="label">Reste à faire</span><span class="v">${fmt(remaining)}</span>
+        <div class="kpi k3"><span class="label">Reste à faire</span><span class="v">${fmt(remaining)}</span>
           <span class="d">sur un objectif de période de ${fmt(fullTgt)}</span></div>
-        <div class="kpi"><span class="label">Partenaires</span><span class="v">${recruited} <span style="font-size:15px;font-weight:600;color:var(--fg-2)">recrutés</span></span>
-          <span class="d">${activeP} partenaire${activeP > 1 ? "s" : ""} ont généré du MRR · ${fmt(perRepMonth)} / commercial / mois</span></div>
+        <div class="kpi k4"><span class="label">Partenaires</span><span class="v">${recruited} <span style="font-size:15px;font-weight:600;color:var(--fg-2)">recrutés</span></span>
+          <span class="d">${recruitedB !== null ? `${dchip(recruited, recruitedB)} ${esc(vs)} (${recruitedB}) · ` : ""}${activeP} productif${activeP > 1 ? "s" : ""} ${dchip(activeP, activeB)}</span></div>
       </div>
 
       <div class="grid2">
-        <div class="card">
-          <h2>Performance par commercial</h2>
-          <p class="sub">MRR ${esc(pLabel)} face à l'objectif à date (${fmt(sumTargets(elapsed))} par commercial sur ${elapsed.length} mois écoulé${elapsed.length > 1 ? "s" : ""})</p>
-          ${repBars(stats)}
-          <div class="legend"><span><i style="background:var(--teal)"></i>MRR réalisé</span><span><i class="tick"></i>Objectif à date</span></div>
-        </div>
-        <div class="card">
-          <h2>Évolution mensuelle</h2>
-          <p class="sub">${ui.gran === "all" ? "Tous les mois" : "Année " + yOf(months[0])} · MRR de ${ui.dashRep === "all" ? "l'équipe" : esc(repName(ui.dashRep))}, période sélectionnée en couleur</p>
-          <div class="chart-wrap" id="monthChart"></div>
-          <div class="legend"><span><i style="background:var(--teal)"></i>MRR du mois</span><span><i class="line"></i>Objectif mensuel ${ui.dashRep === "all" ? "de l'équipe" : "du commercial"}</span></div>
-        </div>
+        ${chartCard("reps", "Performance par commercial", `MRR ${pLabel} ${vs}, et objectif à date`, hbars(repRows, { cmp: true, aria: "MRR par commercial" }),
+          [{ color: "--c-cur", label: `MRR ${pLabel}` }, { color: "--c-prev", label: cmp.label }, { kind: "tick", label: "Objectif à date" }],
+          [["Commercial", `MRR ${pLabel}`, `MRR ${cmp.label}`, "Évolution", "Objectif à date", "Atteinte"], ...repRows.map(r => [r.label, r.v, r.b, dtext(r.v, r.b), r.t || "", isFinite(r.s.ratio) ? pct(r.s.ratio) : ""])])}
+        ${chartCard("months", "Évolution mensuelle", `${ui.gran === "all" ? "Tous les mois" : "Année " + yOf(months[0])} · MRR de ${who}${showPrev ? ", comparé à l'année précédente" : ""}`,
+          columns(ctx, mVals, { sel: months, target: nAct ? mTgt : null, cmp: showPrev ? mPrev : null, tip: (k, i) => `<b>${esc(mLong(k))}</b><br>MRR : ${fmt(mVals[i])}<br>Objectif : ${fmt(mTgt[i])}${mTgt[i] ? ` (${k > CUR ? "à venir" : pct(mVals[i] / mTgt[i])})` : ""}${showPrev ? `<br>${esc(mLong(addM(k, -12)))} : ${fmt(mPrev[i])} ${dtext(mVals[i], mPrev[i]) ? "(" + dtext(mVals[i], mPrev[i]) + ")" : ""}` : ""}`, aria: "MRR par mois" }),
+          [{ color: "--c-cur", label: "MRR du mois" }, ...(showPrev ? [{ color: "--c-prev", label: "Même mois N-1" }] : []), { kind: "line", label: `Objectif mensuel ${ui.dashRep === "all" ? "de l'équipe" : "du commercial"}` }],
+          [["Mois", "MRR", "Objectif", ...(showPrev ? ["MRR N-1"] : [])], ...ctx.map((k, i) => [k, mVals[i], mTgt[i], ...(showPrev ? [mPrev[i]] : [])])])}
       </div>
+
+      <div class="grid2">
+        ${chartCard("cum", "Cumul annuel face à l'objectif", `${ui.gran === "all" ? "Tous les mois" : "Année " + yOf(months[0])} · ${who}`, cumLines(ctx, cum, tcum),
+          [{ color: "--c-cur", label: "Cumul réalisé" }, { kind: "line", label: "Cumul objectif" }],
+          [["Mois", "Cumul réalisé", "Cumul objectif"], ...ctx.map((k, i) => [k, cum[i] === null ? "" : cum[i], tcum[i]])])}
+        ${chartCard("movers", "Plus fortes variations par partenaire", `${pLabel} ${vs} · ${movers.length} partenaire${movers.length > 1 ? "s" : ""}`, divbars(movers),
+          [{ color: "--c-cur", label: "Hausse" }, { color: "--c-down", label: "Baisse" }],
+          [["Partenaire", "Commercial", `MRR ${pLabel}`, `MRR ${cmp.label}`, "Écart", "Évolution"], ...movers.map(m => [m.label, m.rep, m.c, m.b, m.d, dtext(m.c, m.b)])])}
+      </div>
+
+      <div class="grid2">
+        ${chartCard("types", "MRR par type de partenaire", `${pLabel} ${vs}`, hbars(typeRows, { cmp: true, labelW: 170, labelChars: 24, aria: "MRR par type de partenaire" }),
+          [{ color: "--c-cur", label: `MRR ${pLabel}` }, { color: "--c-prev", label: cmp.label }],
+          [["Type de partenaire", `MRR ${pLabel}`, `MRR ${cmp.label}`, "Évolution"], ...typeRows.map(r => [r.label, r.v, r.b, dtext(r.v, r.b)])])}
+        ${chartCard("products", "MRR par produit DFP", `${pLabel} ${vs} · un partenaire qui vend plusieurs produits compte pour chacun`, hbars(prodRows, { cmp: true, labelW: 170, labelChars: 24, aria: "MRR par produit DFP" }),
+          [{ color: "--c-cur", label: `MRR ${pLabel}` }, { color: "--c-prev", label: cmp.label }],
+          [["Produit DFP", `MRR ${pLabel}`, `MRR ${cmp.label}`, "Évolution"], ...prodRows.map(r => [r.label, r.v, r.b, dtext(r.v, r.b)])])}
+      </div>
+
+      ${chartCard("recruits", "Partenaires recrutés par mois", `${ui.gran === "all" ? "Tous les mois" : "Année " + yOf(months[0])} · ${who}, selon le mois de recrutement`,
+        columns(ctx, recs, { W: 1240, H: 230, sel: months, int: true, tip: (k, i) => `<b>${esc(mLong(k))}</b><br>${recs[i]} partenaire${recs[i] > 1 ? "s" : ""} recruté${recs[i] > 1 ? "s" : ""}${recs[i] ? "<br>" + ps.filter(p => p.recruited === k).map(p => esc(p.name)).slice(0, 8).join("<br>") : ""}`, aria: "Partenaires recrutés par mois" }),
+        [{ color: "--c-cur", label: "Partenaires recrutés" }],
+        [["Mois", "Partenaires recrutés"], ...ctx.map((k, i) => [k, recs[i]])])}
+
+      <div class="card" id="evoCard"></div>
 
       <div class="card">
         <h2>Détail mois par mois</h2>
@@ -693,76 +949,50 @@ form.stack { display: grid; gap: 12px; }
         <div class="tbl-wrap">${matrix(reps, months)}</div>
       </div>
 
-      <div class="grid2">
-        <div class="card">
-          <h2>Classement</h2>
-          <p class="sub">${esc(pLabel)}</p>
-          <div class="tbl-wrap"><table class="t">
-            <thead><tr><th>#</th><th>Commercial</th><th class="n">Recrutés</th><th class="n">MRR</th><th class="n">Objectif</th><th class="n">Atteinte</th></tr></thead>
-            <tbody>${[...stats].sort((a, b) => b.mrr - a.mrr).map((s, i) => `<tr><td class="num muted">${i + 1}</td><td style="white-space:nowrap">${esc(s.rep.name)}</td><td class="n">${s.recruited}</td><td class="n"><b>${fmt(s.mrr)}</b></td><td class="n">${s.tgt ? fmt(s.tgt) : "—"}</td><td class="n">${chip(s.ratio)}</td></tr>`).join("")}</tbody>
-          </table></div>
-        </div>
-        <div class="card">
-          <h2>Top partenaires</h2>
-          <p class="sub">Plus gros contributeurs au MRR, ${esc(pLabel)}</p>
-          ${topPartners(months, repIds)}
-        </div>
+      <div class="card">
+        <h2>Classement</h2>
+        <p class="sub">${esc(pLabel)} ${esc(vs)}</p>
+        <div class="tbl-wrap"><table class="t">
+          <thead><tr><th>#</th><th>Commercial</th><th class="n">Recrutés</th><th class="n">MRR</th><th class="n">${esc(cmp.label)}</th><th class="n">Évolution</th><th class="n">Objectif</th><th class="n">Atteinte</th></tr></thead>
+          <tbody>${[...repRows].sort((a, b) => b.v - a.v).map((r, i) => `<tr><td class="num muted">${i + 1}</td><td style="white-space:nowrap">${esc(r.label)}</td><td class="n">${r.s.recruited}</td><td class="n"><b>${fmt(r.v)}</b></td><td class="n">${fmt(r.b)}</td><td class="n">${dchip(r.v, r.b)}</td><td class="n">${r.t ? fmt(r.t) : "—"}</td><td class="n">${chip(r.s.ratio)}</td></tr>`).join("")}</tbody>
+        </table></div>
       </div>
       </div>`;
-    monthChart(reps, months);
+    ui.evoCtx = { months, cmp, repIds, pLabel };
+    renderEvo();
   }
 
-  function repBars(stats) {
-    if (!stats.length) return `<div class="empty">Aucun commercial dans ce périmètre.</div>`;
-    const max = Math.max(1, ...stats.map(s => Math.max(s.mrr, s.tgt))) * 1.05;
-    return `<div class="reps">${stats.map(s => `
-      <div class="rep-row" data-tip="<b>${esc(s.rep.name)}</b><br>MRR : ${fmt(s.mrr)}<br>Objectif à date : ${s.tgt ? fmt(s.tgt) : "—"}<br>Partenaires recrutés : ${s.recruited}<br>Partenaires productifs : ${s.partners}">
-        <div class="rep-name">${esc(s.rep.name)}<small>${s.recruited} recruté${s.recruited > 1 ? "s" : ""}</small></div>
-        <div class="track"><div class="bar" style="width:${(s.mrr / max) * 100}%"></div>${s.tgt ? `<div class="tgt" style="left:${(s.tgt / max) * 100}%"></div>` : ""}</div>
-        <div class="rep-val"><b>${fmt(s.mrr)}</b>${chip(s.ratio)}</div>
-      </div>`).join("")}</div>`;
+  // per-partner evolution table (sortable, searchable, exportable)
+  function evoRows() {
+    const { months, cmp, repIds } = ui.evoCtx;
+    const q = normName(ui.evoQ || "");
+    const rows = FP().filter(p => repIds.has(p.repId) && (!q || normName(p.name).includes(q) || normName(p.oip).includes(q)))
+      .map(p => { const c = sumP(p, months), b = cmpSum(cmp, p); return { p, c, b, d: c - b, r: evo(c, b), rep: repName(p.repId) }; })
+      .filter(x => x.c || x.b);
+    const { k, dir } = ui.evoSort;
+    const key = x => k === "name" ? normName(x.p.name) : k === "rep" ? normName(x.rep) : k === "r" ? (isNaN(x.r) ? -Infinity : x.r) : x[k];
+    rows.sort((a, b) => { const A = key(a), B = key(b); return (A < B ? -1 : A > B ? 1 : 0) * (dir === "asc" ? 1 : -1) || b.c - a.c; });
+    return rows;
+  }
+  function renderEvo() {
+    const box = $("#evoCard");
+    if (!box || !ui.evoCtx) return;
+    const { cmp, pLabel } = ui.evoCtx;
+    const rows = evoRows();
+    const th = (k, l, n) => `<th class="${n ? "n" : ""}"><button class="sort" data-sort="${k}" aria-sort="${ui.evoSort.k === k ? (ui.evoSort.dir === "asc" ? "ascending" : "descending") : "none"}">${l}<span aria-hidden="true">${ui.evoSort.k === k ? (ui.evoSort.dir === "asc" ? " ▲" : " ▼") : ""}</span></button></th>`;
+    const tc = rows.reduce((s, x) => s + x.c, 0), tb = rows.reduce((s, x) => s + x.b, 0);
+    box.innerHTML = `<div class="toolbar"><div><h2>Évolution par partenaire</h2><p class="sub" style="margin:0">MRR ${esc(pLabel)} face à ${esc(cmp.label)} · ${rows.length} partenaire${rows.length > 1 ? "s" : ""} · cliquez sur un titre de colonne pour trier</p></div>
+      <div class="filters"><label class="field"><span>Rechercher</span><input type="text" id="evoQ" placeholder="Nom ou OIP" value="${esc(ui.evoQ || "")}"></label><button class="btn" data-act="evoCsv">Télécharger (CSV)</button></div></div>
+      ${rows.length ? `<div class="tbl-wrap evo-wrap"><table class="t evo"><thead><tr>${th("name", "Partenaire")}${th("rep", "Commercial")}<th>Type</th>${th("c", "MRR " + esc(pLabel), 1)}${th("b", esc(cmp.label), 1)}${th("d", "Écart", 1)}${th("r", "Évolution", 1)}</tr></thead>
+      <tbody>${rows.map(x => `<tr><td><b>${esc(x.p.name)}</b>${x.p.oip ? `<small class="muted" style="display:block">${esc(x.p.oip)}</small>` : ""}</td><td style="white-space:nowrap">${esc(x.rep)}</td><td class="muted">${esc(ptypeLabel(x.p.ptype) || "—")}</td><td class="n"><b>${fmt(x.c)}</b></td><td class="n">${fmt(x.b)}</td><td class="n ${x.d > 0 ? "pos" : x.d < 0 ? "neg" : "muted"}">${signed(x.d)}</td><td class="n">${dchip(x.c, x.b)}</td></tr>`).join("")}</tbody>
+      <tfoot><tr><td colspan="3">Total</td><td class="n">${fmt(tc)}</td><td class="n">${fmt(tb)}</td><td class="n">${signed(tc - tb)}</td><td class="n">${dchip(tc, tb)}</td></tr></tfoot></table></div>`
+      : `<div class="empty">Aucun partenaire avec du MRR sur ces périodes.</div>`}`;
   }
 
   function contextMonths(months) {
     if (ui.gran === "all") return months.slice(-24);
     const y = yOf(months[0]);
     return range(ym(y, 1), ym(y, 12));
-  }
-
-  function monthChart(reps, months) {
-    const box = $("#monthChart");
-    if (!box) return;
-    const ctx = contextMonths(months);
-    const ids = new Set(reps.map(r => r.id));
-    const vals = ctx.map(k => FP().filter(p => ids.has(p.repId)).reduce((s, p) => s + mrrOf(p, k), 0));
-    const nAct = reps.filter(r => r.active !== false).length;
-    const tl = ctx.map(k => targetFor(k) * nAct);
-    const W = 620, H = 260, L = 52, R = 8, T = 14, B = 28;
-    const top = niceMax(Math.max(...tl, ...vals, 1));
-    const ticks = 4;
-    const y = v => T + (H - T - B) * (1 - v / top);
-    const bw = (W - L - R) / ctx.length;
-    const inSel = new Set(months);
-    let g = "";
-    for (let i = 0; i <= ticks; i++) {
-      const v = top * i / ticks, yy = y(v);
-      g += `<line x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}" stroke="var(--line)" stroke-width="1" ${i ? 'stroke-dasharray="2 3"' : ""}/>`;
-      g += `<text x="${L - 8}" y="${yy + 4}" text-anchor="end">${fmtK(v)}</text>`;
-    }
-    const labelEvery = ctx.length > 12 ? Math.ceil(ctx.length / 12) : 1;
-    ctx.forEach((k, i) => {
-      const x = L + i * bw, w = Math.max(2, bw - 6), h = Math.max(0, y(0) - y(vals[i]));
-      const sel = inSel.has(k), fut = k > CUR;
-      const r = Math.min(4, w / 2, h);
-      const x0 = x + 3, y0 = y(vals[i]);
-      if (h > 0) g += `<path d="M${x0},${y(0)} V${y0 + r} Q${x0},${y0} ${x0 + r},${y0} H${x0 + w - r} Q${x0 + w},${y0} ${x0 + w},${y0 + r} V${y(0)} Z" fill="var(--teal)" opacity="${sel ? 1 : 0.32}"/>`;
-      if (i % labelEvery === 0) g += `<text x="${x + bw / 2}" y="${H - 8}" text-anchor="middle" ${sel ? 'style="fill:var(--fg);font-weight:600"' : ""}>${ctx.length > 12 ? mLabel(k) : MONTHS[mOf(k) - 1]}</text>`;
-      const tline = tl[i], ratio = tline ? vals[i] / tline : NaN;
-      g += `<rect x="${x}" y="${T}" width="${bw}" height="${H - T - B}" fill="transparent" data-tip="<b>${esc(mLong(k))}</b><br>MRR : ${fmt(vals[i])}<br>Objectif : ${fmt(tline)}${tline ? ` (${fut ? "à venir" : pct(ratio)})` : ""}"/>`;
-    });
-    // stepped objective line: one level per month
-    if (nAct) g += `<path d="${tl.map((t, i) => `${i ? "L" : "M"}${L + i * bw},${y(t)} H${L + (i + 1) * bw}`).join(" ")}" fill="none" stroke="var(--orange)" stroke-width="2" stroke-dasharray="6 4"/>`;
-    box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="MRR par mois">${g}</svg>`;
   }
   function niceMax(v) {
     const p = Math.pow(10, Math.floor(Math.log10(v)));
@@ -787,11 +1017,74 @@ form.stack { display: grid; gap: 12px; }
       <tfoot><tr><td>Équipe</td>${colTot.map((v, i) => `<td class="n ${sel.has(ctx[i]) ? "cur" : ""}">${ctx[i] > CUR ? "" : fmt(v)}</td>`).join("")}<td class="n">${fmt(all)}</td><td></td></tr></tfoot></table>`;
   }
 
-  function topPartners(months, repIds) {
-    const list = FP().filter(p => repIds.has(p.repId)).map(p => ({ p, v: months.reduce((s, k) => s + mrrOf(p, k), 0) })).filter(x => x.v > 0).sort((a, b) => b.v - a.v).slice(0, 8);
-    if (!list.length) return `<div class="empty">Aucun MRR saisi sur cette période.</div>`;
-    return `<div class="tbl-wrap"><table class="t"><thead><tr><th>Partenaire</th><th>Commercial</th><th class="n">MRR</th></tr></thead><tbody>
-      ${list.map(x => `<tr><td>${esc(x.p.name)}</td><td class="muted">${esc(repName(x.p.repId))}</td><td class="n"><b>${fmt(x.v)}</b></td></tr>`).join("")}</tbody></table></div>`;
+  // ----- chart & table export -----
+  // exports always use the light palette so they paste cleanly into documents and slides
+  const EXPORT_TOKENS = { "--surface": "#ffffff", "--surface-2": "#eef2f4", "--fg": "#1f2a37", "--fg-2": "#4f5b67", "--muted": "#7f8a96", "--line": "#e3e8ec", "--teal": "#00a5b5", "--c-cur": "#00a5b5", "--c-prev": "#7fbfc8", "--c-down": "#b8327a", "--orange": "#ff9015", "--good": "#1d8a5a", "--warn": "#b86a00", "--bad": "#b3261e" };
+  const resolveVars = str => str.replace(/var\((--[\w-]+)\)/g, (m, v) => EXPORT_TOKENS[v] || "#1f2a37");
+  function exportSvg(id) {
+    const svg = $("#ch-" + id + " svg"), meta = CH[id];
+    if (!svg || !meta) return null;
+    const [, , w, h] = svg.getAttribute("viewBox").split(" ").map(Number);
+    const pad = 24, head = 62, legH = meta.legend.length ? 34 : 0, W = w + pad * 2, H = head + h + legH + pad;
+    const clone = svg.cloneNode(true);
+    clone.querySelectorAll(".guide").forEach(n => n.remove());
+    clone.querySelectorAll("[data-tip]").forEach(n => n.removeAttribute("data-tip"));
+    // XML serialization (innerHTML would write HTML entities such as &nbsp; that break the SVG file)
+    const xs = new XMLSerializer(), inner = [...clone.childNodes].map(n => xs.serializeToString(n)).join("");
+    let leg = "", lx = pad;
+    const ly = head + h + 22;
+    meta.legend.forEach(l => {
+      if (l.kind === "line") leg += `<line x1="${lx}" x2="${lx + 18}" y1="${ly - 4}" y2="${ly - 4}" stroke="var(--orange)" stroke-width="2" stroke-dasharray="5 3"/>`;
+      else if (l.kind === "tick") leg += `<rect x="${lx + 7}" y="${ly - 11}" width="2" height="13" fill="var(--orange)"/>`;
+      else leg += `<rect x="${lx}" y="${ly - 10}" width="14" height="11" rx="2" fill="var(${l.color})"/>`;
+      leg += `<text x="${lx + 24}" y="${ly}" font-size="12" fill="var(--fg-2)">${esc(l.label)}</text>`;
+      lx += 40 + l.label.length * 6.6;
+    });
+    const out = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="Inter, 'Segoe UI', Arial, sans-serif"><rect width="${W}" height="${H}" fill="var(--surface)"/>`
+      + `<text x="${pad}" y="${pad + 10}" font-size="17" font-weight="700" fill="var(--fg)">${esc(meta.title)}</text>`
+      + `<text x="${pad}" y="${pad + 32}" font-size="12" fill="var(--fg-2)">${esc(trunc(meta.sub, 110))}</text>`
+      + `<g transform="translate(${pad},${head})">${inner}</g>${leg}</svg>`;
+    return { svg: resolveVars(out), W, H };
+  }
+  async function svgToPng(svgStr, W, H) {
+    const img = new Image();
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgStr);
+    await img.decode();
+    const sc = 2, c = document.createElement("canvas");
+    c.width = W * sc; c.height = H * sc;
+    const g = c.getContext("2d"); g.scale(sc, sc); g.drawImage(img, 0, 0, W, H);
+    return new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error("png")), "image/png"));
+  }
+  async function saveFile(filename, data) {
+    if (downloads) {
+      try { const r = await downloads.save({ filename, data }); if (r && r.status === "saved") toast("Fichier enregistré"); return; }
+      catch (e) { if (e && (e.code === "declined" || e.code === "rate_limited")) return; }
+    }
+    try {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(data instanceof Blob ? data : new Blob([data]));
+      a.download = filename; document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+    } catch { toast("Téléchargement indisponible dans cette vue."); }
+  }
+  const toCsv = rows => "﻿" + rows.map(r => r.map(c => typeof c === "number" ? c.toFixed(2).replace(".", ",") : /[";\n]/.test(String(c)) ? `"${String(c).replace(/"/g, '""')}"` : c).join(";")).join("\n");
+  const fileSlug = s => normName(s).slice(0, 40) || "graphique";
+  async function downloadChart(id, kind) {
+    const meta = CH[id];
+    if (!meta) return;
+    const name = `${fileSlug(meta.title)}-${dayKey(new Date())}`;
+    if (kind === "csv") { await saveFile(name + ".csv", toCsv(meta.rows)); return; }
+    const ex = exportSvg(id);
+    if (!ex) { toast("Rien à exporter pour ces filtres."); return; }
+    if (kind === "svg") { await saveFile(name + ".svg", ex.svg); return; }
+    try { await saveFile(name + ".png", await svgToPng(ex.svg, ex.W, ex.H)); }
+    catch { toast("Image indisponible : utilisez le format SVG."); }
+  }
+  async function downloadEvo() {
+    if (!ui.evoCtx) return;
+    const { cmp, pLabel } = ui.evoCtx;
+    const rows = evoRows();
+    await saveFile(`evolution-partenaires-${dayKey(new Date())}.csv`, toCsv([["Partenaire", "OIP", "Commercial", "Type de partenaire", `MRR ${pLabel}`, `MRR ${cmp.label}`, "Écart", "Évolution"], ...rows.map(x => [x.p.name, x.p.oip || "", x.rep, ptypeLabel(x.p.ptype), x.c, x.b, x.d, dtext(x.c, x.b)])]));
   }
 
   // ----- Entry -----
@@ -1641,8 +1934,15 @@ form.stack { display: grid; gap: 12px; }
       if (!t.classList.contains("armed")) { t.classList.add("armed"); t.textContent = "Confirmer"; return; }
       await guarded(() => api.deleteRep(t.dataset.delrep), "Commercial supprimé"); return;
     }
+    if (t.dataset.dl) { downloadChart(t.dataset.dl, t.dataset.fmt); return; }
+    if (t.dataset.sort) {
+      const k = t.dataset.sort;
+      ui.evoSort = ui.evoSort.k === k ? { k, dir: ui.evoSort.dir === "asc" ? "desc" : "asc" } : { k, dir: k === "name" || k === "rep" ? "asc" : "desc" };
+      renderEvo(); const b = $(`[data-sort="${k}"]`); if (b) b.focus(); return;
+    }
     const act = t.dataset.act;
     if (act === "export") exportCsv();
+    if (act === "evoCsv") downloadEvo();
     if (act === "clearFilters") { ui.fType = "all"; ui.fProd = "all"; ui.fHs = "all"; render(); }
     if (act === "changes") openChanges();
     if (act === "import") openImport();
@@ -1657,6 +1957,7 @@ form.stack { display: grid; gap: 12px; }
     const t = e.target;
     if (t.id === "periodSel") { ui.period = t.value; render(); }
     if (t.id === "dashRep") { ui.dashRep = t.value; render(); }
+    if (t.id === "cmpSel") { ui.cmp = t.value; savePrefs(); render(); }
     if (t.id === "entryYear") { ui.entryYear = +t.value; render(); }
     if (t.id === "entryRep") { ui.entryRep = t.value; savePrefs(); render(); }
     if (t.id === "pRep") { ui.partnerRep = t.value; render(); }
@@ -1734,6 +2035,10 @@ form.stack { display: grid; gap: 12px; }
     if (e.target.id === "detQ") {
       ui.detQ = e.target.value; const pos = e.target.selectionStart; renderDetail();
       const n = $("#detQ"); n.focus(); try { n.setSelectionRange(pos, pos); } catch {}
+    }
+    if (e.target.id === "evoQ") {
+      ui.evoQ = e.target.value; const pos = e.target.selectionStart; renderEvo();
+      const n = $("#evoQ"); n.focus(); try { n.setSelectionRange(pos, pos); } catch {}
     }
     if (e.target.id === "entryQ") {
       ui.entryQ = e.target.value;

@@ -15,3 +15,12 @@ Tous les montants sont saisis, stockés et affichés au centime (deux décimales
 Publiée comme artifact claude.ai, la page stocke les données dans une base partagée. Ouverte en local (`index.html`), elle les garde dans le navigateur (localStorage) et propose un jeu d'exemple.
 
 Accès : seuls le propriétaire et les Éditeurs peuvent modifier les données ; l'équipe, partagée en Contributeur, consulte en lecture seule et ses visites sont enregistrées (un accès Lecteur ne permet pas d'enregistrer la visite).
+
+## Mise en page et tableau de bord (octobre 2026)
+
+- Menu latéral avec logo (icônes seules sur tablette, barre en bas sur téléphone), cartes blanches bordées.
+- Tableau de bord : filtres (période, comparaison, commercial, type, produit, statut HubSpot) appliqués à tous les graphiques.
+- « Comparer à » : période précédente (mois, trimestre ou année selon la granularité, à date si la période est en cours), même période l'an dernier, ou état des données il y a 7 / 30 jours reconstitué depuis le journal des mises à jour (la remise à zéro du 19/10/2026 n'est jamais annulée).
+- Graphiques : performance par commercial (vs comparaison + objectif), évolution mensuelle, cumul annuel vs objectif, plus fortes variations par partenaire, MRR par type, MRR par produit DFP, partenaires recrutés par mois.
+- Chaque graphique se télécharge en PNG, SVG (palette claire, titre et légende inclus) ou CSV (données).
+- Tableau « Évolution par partenaire » : écart en € et en %, tri par colonne, recherche, export CSV.
