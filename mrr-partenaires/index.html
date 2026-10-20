@@ -1478,7 +1478,7 @@ form.stack { display: grid; gap: 12px; }
       <form class="stack" id="editForm">
         <label class="field"><span>Nom</span><input type="text" id="ed-name" value="${esc(p.name)}" maxlength="120" required></label>
         <label class="field"><span>Commercial</span><select id="ed-rep">${sortedReps().map(r => `<option value="${r.id}" ${r.id === p.repId ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select></label>
-        <label class="field"><span>Mois de recrutement</span><input type="month" id="ed-month" value="${p.recruited || ""}" max="${CUR}" required></label>
+        <label class="field"><span>Mois de recrutement</span><input type="month" id="ed-month" value="${p.recruited || ""}" max="${CUR}" ${p.hsStatus === "formation" ? "disabled" : "required"}></label>
         <label class="field"><span>OIP</span><input type="text" id="ed-oip" value="${esc(p.oip || "")}" maxlength="60"></label>
         <label class="field"><span>Type de partenaire</span><select id="ed-type">${ptypeOptions(p.ptype || "", "— À préciser —")}</select></label>
         <label class="field"><span>Statut HubSpot</span><select id="ed-hs">${hsOptions(p.hsStatus || "")}</select></label>
@@ -1487,6 +1487,8 @@ form.stack { display: grid; gap: 12px; }
           <span style="display:flex;gap:8px"><button type="button" class="btn" id="ed-cancel">Annuler</button><button type="submit" class="btn primary">Enregistrer</button></span></div>
       </form></div></div>`;
     $("#ed-name").focus();
+    // "Prêt pour formation" = pas encore recruté : pas de mois de recrutement
+    $("#ed-hs").onchange = () => { const m = $("#ed-month"), f = $("#ed-hs").value === "formation"; m.disabled = f; m.required = !f; if (f) m.value = ""; };
     const close = () => { $("#modalRoot").innerHTML = ""; };
     $("#ov").addEventListener("click", e => { if (e.target.id === "ov") close(); });
     $("#ed-cancel").onclick = close;
@@ -1499,6 +1501,7 @@ form.stack { display: grid; gap: 12px; }
     $("#editForm").onsubmit = async e => {
       e.preventDefault();
       const np = { ...p, mrr: { ...(p.mrr || {}) }, name: $("#ed-name").value.trim(), repId: $("#ed-rep").value, recruited: $("#ed-month").value, oip: $("#ed-oip").value.trim(), ptype: $("#ed-type").value, hsStatus: $("#ed-hs").value, products: [...editProducts], product: undefined, updatedAt: Date.now() };
+      if (np.hsStatus === "formation") np.recruited = "";
       if (!np.name) return;
       close(); await guarded(() => api.savePartner(np), "Partenaire mis à jour");
     };
@@ -1680,7 +1683,9 @@ form.stack { display: grid; gap: 12px; }
     if (t.classList.contains("hs-in")) {
       const p = S.partners.find(x => x.id === t.dataset.pid);
       if (!p || (p.hsStatus || "") === t.value) return;
-      await guarded(() => api.savePartner({ ...p, hsStatus: t.value, updatedAt: Date.now() }), `${p.name} : ${t.value ? hsLabel(t.value) : "statut HubSpot effacé"}`);
+      const np = { ...p, hsStatus: t.value, updatedAt: Date.now() };
+      if (t.value === "formation") np.recruited = "";
+      await guarded(() => api.savePartner(np), `${p.name} : ${t.value ? hsLabel(t.value) : "statut HubSpot effacé"}${t.value === "formation" && p.recruited ? " (mois de recrutement retiré)" : ""}`);
     }
     if (t.classList.contains("ptype-in")) {
       const p = S.partners.find(x => x.id === t.dataset.pid);
@@ -1695,7 +1700,7 @@ form.stack { display: grid; gap: 12px; }
         if (!v || v > CUR) { t.value = p.recruited || ""; toast("Choisissez un mois de recrutement passé ou en cours."); return; }
         if (v === p.recruited) return;
         const early = Object.keys(p.mrr || {}).filter(k => k < v && mrrOf(p, k) > 0);
-        const ok = await guarded(() => api.savePartner({ ...p, recruited: v, updatedAt: Date.now() }), `${p.name} : recruté en ${mLong(v)}`);
+        const ok = await guarded(() => api.savePartner({ ...p, recruited: v, ...(p.hsStatus === "formation" ? { hsStatus: "recrute" } : {}), updatedAt: Date.now() }), `${p.name} : recruté en ${mLong(v)}${p.hsStatus === "formation" ? " (statut HubSpot → Recruté)" : ""}`);
         if (ok && early.length) toast(`Attention : du MRR est saisi avant ${mLong(v)} (cases orange). Vérifiez-le ou effacez-le.`);
         if (ok && yOf(v) > ui.entryYear) { ui.entryYear = yOf(v); render(); }
       } else {
