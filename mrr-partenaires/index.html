@@ -158,6 +158,10 @@ table.t th.cur, table.t td.cur { background: var(--teal-soft); }
 .oip-in:placeholder-shown { border-style: dashed; }
 .ptype-in { min-height: 32px !important; padding: 4px 6px !important; width: 200px; }
 .ptype-in.empty-v { border-style: dashed; color: var(--muted); }
+.hs-in { min-height: 32px !important; padding: 4px 6px !important; width: 190px; font-weight: 600; }
+.hs-in.hs-recrute { color: var(--good); background: var(--good-bg); border-color: transparent; }
+.hs-in.hs-formation { color: var(--warn); background: var(--warn-bg); border-color: transparent; }
+.hs-in.hs-none { border-style: dashed; color: var(--muted); font-weight: 400; }
 .prod-btn { display: inline-flex; align-items: center; justify-content: space-between; gap: 6px; width: 170px; min-height: 32px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); cursor: pointer; text-align: left; font-size: 13px; }
 .prod-btn.wide { width: 100%; min-height: 36px; }
 .prod-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
@@ -319,6 +323,7 @@ form.stack { display: grid; gap: 12px; }
     teamYear: now.getFullYear(),
     fType: "all",
     fProd: "all",
+    fHs: "all",
     partnerQ: ""
   };
   const savePrefs = () => safeLS.set("mrr-ui", { tab: ui.tab, gran: ui.gran, entryRep: ui.entryRep });
@@ -370,7 +375,7 @@ form.stack { display: grid; gap: 12px; }
     }
     if ((o.recruited || "") !== (n.recruited || "")) out.push({ ...base(n), t: "rec", o: o.recruited || "", v: n.recruited || "" });
     if ((o.repId || "") !== (n.repId || "")) out.push({ ...base(n), t: "rep", o: o.repId || "", v: n.repId || "" });
-    for (const [f, label] of [["name", "Nom"], ["oip", "OIP"], ["ptype", "Type"]]) if ((o[f] || "") !== (n[f] || "")) out.push({ ...base(n), t: "info", f: label, o: f === "ptype" ? ptypeLabel(o[f]) : o[f] || "", v: f === "ptype" ? ptypeLabel(n[f]) : n[f] || "" });
+    for (const [f, label] of [["name", "Nom"], ["oip", "OIP"], ["ptype", "Type"], ["hsStatus", "Statut HubSpot"]]) if ((o[f] || "") !== (n[f] || "")) out.push({ ...base(n), t: "info", f: label, o: f === "ptype" ? ptypeLabel(o[f]) : f === "hsStatus" ? hsLabel(o[f]) : o[f] || "", v: f === "ptype" ? ptypeLabel(n[f]) : f === "hsStatus" ? hsLabel(n[f]) : n[f] || "" });
     if (prods(o).join("|") !== prods(n).join("|")) out.push({ ...base(n), t: "info", f: "Produits", o: prods(o).join(", "), v: prods(n).join(", ") });
     return out;
   }
@@ -498,17 +503,19 @@ form.stack { display: grid; gap: 12px; }
     if (ui.fType === "both" && t !== "both") return false;
     if (ui.fType.startsWith("reveil_") && t !== ui.fType) return false;
     if (ui.fType === "none" && t) return false;
+    if (ui.fHs === "none" ? !!p.hsStatus : ui.fHs !== "all" && p.hsStatus !== ui.fHs) return false;
     if (ui.fProd === "none" && prods(p).length) return false;
     if (ui.fProd !== "all" && ui.fProd !== "none" && !prods(p).includes(ui.fProd)) return false;
     return true;
   };
   const FP = () => S.partners.filter(passFilters);
-  const filtersOn = () => ui.fType !== "all" || ui.fProd !== "all";
+  const filtersOn = () => ui.fType !== "all" || ui.fProd !== "all" || ui.fHs !== "all";
   const filterFields = () => `
     <label class="field"><span>Type de partenaire</span><select id="fType">${[["all", "Tous les types"], ["operateur", "Opérateurs (dont les deux)"], ["ambassadeur", "Ambassadeurs (dont les deux)"], ["both", "Opérateur et ambassadeur"], ["reveil_operateur", "Réveil opérateur"], ["reveil_ambassadeur", "Réveil ambassadeur"], ["none", "Type non renseigné"]].map(([v, l]) => `<option value="${v}" ${ui.fType === v ? "selected" : ""}>${l}</option>`).join("")}</select></label>
     <label class="field"><span>Produit DFP</span><select id="fProd"><option value="all">Tous les produits</option>${catalog().map(v => `<option value="${esc(v)}" ${ui.fProd === v ? "selected" : ""}>${esc(v)}</option>`).join("")}<option value="none" ${ui.fProd === "none" ? "selected" : ""}>Produit non renseigné</option></select></label>
+    <label class="field"><span>Statut HubSpot</span><select id="fHs">${[["all", "Tous les statuts"], ["recrute", "Recruté"], ["formation", "Prêt pour formation"], ["none", "Non renseigné"]].map(([v, l]) => `<option value="${v}" ${ui.fHs === v ? "selected" : ""}>${l}</option>`).join("")}</select></label>
     ${filtersOn() ? `<button type="button" class="btn ghost" data-act="clearFilters" style="align-self:flex-end">Effacer les filtres</button>` : ""}`;
-  const filterNote = () => filtersOn() ? [ui.fType !== "all" ? ({ operateur: "opérateurs", ambassadeur: "ambassadeurs", both: "opérateurs et ambassadeurs", reveil_operateur: "réveil opérateur", reveil_ambassadeur: "réveil ambassadeur", none: "type non renseigné" })[ui.fType] : "", ui.fProd === "none" ? "produit non renseigné" : ui.fProd !== "all" ? ui.fProd : ""].filter(Boolean).join(" · ") : "";
+  const filterNote = () => filtersOn() ? [ui.fType !== "all" ? ({ operateur: "opérateurs", ambassadeur: "ambassadeurs", both: "opérateurs et ambassadeurs", reveil_operateur: "réveil opérateur", reveil_ambassadeur: "réveil ambassadeur", none: "type non renseigné" })[ui.fType] : "", ui.fProd === "none" ? "produit non renseigné" : ui.fProd !== "all" ? ui.fProd : "", ui.fHs !== "all" ? (ui.fHs === "none" ? "statut HubSpot non renseigné" : hsLabel(ui.fHs).toLowerCase()) : ""].filter(Boolean).join(" · ") : "";
   const DEFAULT_PRODUCTS = ["Accès internet", "Call2Teams", "Cloud", "Couverture GSM", "Couverture Wifi", "Dstny UCaaS", "Dstny Digital Assistant", "Mobile", "Phonio", "Services & Installation", "Téléphonie IP", "Téléphonie Standard", "VoIPcube"];
   const catalog = () => (Array.isArray(S.settings.products) && S.settings.products.length ? S.settings.products : DEFAULT_PRODUCTS);
   // products a partner sells (older entries kept a single "product" text)
@@ -520,6 +527,10 @@ form.stack { display: grid; gap: 12px; }
   const delBtn = (p, icon) => `<button type="button" class="btn ghost danger del-btn${icon ? " icon" : ""}" data-delp="${p.id}" data-label="${icon ? "✕" : "Supprimer"}" aria-label="Supprimer ${esc(p.name)}" title="Supprimer cette ligne">${icon ? "✕" : "Supprimer"}</button>`;
   // partner type: operator, ambassador, or both
   const PTYPES = [["operateur", "Opérateur"], ["ambassadeur", "Ambassadeur"], ["both", "Opérateur et ambassadeur"], ["reveil_operateur", "Réveil opérateur"], ["reveil_ambassadeur", "Réveil ambassadeur"]];
+  // HubSpot deal stage
+  const HSST = [["recrute", "Recruté"], ["formation", "Prêt pour formation"]];
+  const hsLabel = v => (HSST.find(x => x[0] === v) || [])[1] || "";
+  const hsOptions = sel => `<option value="">—</option>${HSST.map(([v, l]) => `<option value="${v}" ${v === sel ? "selected" : ""}>${l}</option>`).join("")}`;
   const ptypeLabel = t => (PTYPES.find(x => x[0] === t) || [])[1] || "";
   const ptypeOptions = (sel, empty) => `<option value="">${empty}</option>${PTYPES.map(([v, l]) => `<option value="${v}" ${v === sel ? "selected" : ""}>${l}</option>`).join("")}`;
   const parsePtype = v => { const t = String(v ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim(); if (!t) return ""; const op = /op[ée]?r|operat/.test(t), am = /amb/.test(t); if (/reveil/.test(t)) return am && !op ? "reveil_ambassadeur" : op ? "reveil_operateur" : ""; return /deux|both|\b2\b|les 2/.test(t) || (op && am) ? "both" : op ? "operateur" : am ? "ambassadeur" : ""; };
@@ -838,13 +849,14 @@ form.stack { display: grid; gap: 12px; }
         </div>
         ${nDup ? `<div class="banner" style="margin-bottom:12px"><span><b>${nDup} lignes</b> portent le même nom qu'un autre partenaire (marquées « Doublon ? »). Vérifiez-les et supprimez celles en trop.</span></div>` : ""}
         ${ps.length ? `<div class="tbl-wrap grid-wrap" id="entryTable"><table class="t grid">
-          <thead><tr><th class="sticky">Partenaire</th><th>Recruté le</th><th>OIP</th><th>Type</th><th>Type de produit DFP</th>${months.map(k => `<th class="n ${k === CUR ? "cur" : ""}">${MONTHS[mOf(k) - 1]}</th>`).join("")}<th class="n">Total ${y}</th></tr></thead>
+          <thead><tr><th class="sticky">Partenaire</th><th>Recruté le</th><th>OIP</th><th>Type</th><th>Statut HubSpot</th><th>Type de produit DFP</th>${months.map(k => `<th class="n ${k === CUR ? "cur" : ""}">${MONTHS[mOf(k) - 1]}</th>`).join("")}<th class="n">Total ${y}</th></tr></thead>
           <tbody>${ps.map(p => {
             const tot = months.reduce((t, k) => t + mrrOf(p, k), 0);
             return `<tr><td class="sticky"><div class="name-cell"><div><b>${esc(p.name)}</b>${dupChip(dups, p)}<small>${esc(repName(p.repId))}</small></div>${ro ? "" : delBtn(p, true)}</div></td>
               <td><input class="rec-in" type="month" data-pid="${p.id}" value="${p.recruited || ""}" max="${CUR}" aria-label="Mois de recrutement ${esc(p.name)}" ${ro ? "disabled" : ""}></td>
               <td><input class="oip-in" type="text" data-pid="${p.id}" value="${esc(p.oip || "")}" maxlength="60" placeholder="À saisir" aria-label="OIP ${esc(p.name)}" ${ro ? "disabled" : ""}></td>
               <td><select class="ptype-in${p.ptype ? "" : " empty-v"}" data-pid="${p.id}" aria-label="Type de partenaire ${esc(p.name)}" ${ro ? "disabled" : ""}>${ptypeOptions(p.ptype || "", "À préciser")}</select></td>
+              <td><select class="hs-in hs-${p.hsStatus || "none"}" data-pid="${p.id}" aria-label="Statut HubSpot ${esc(p.name)}" ${ro ? "disabled" : ""}>${hsOptions(p.hsStatus || "")}</select></td>
               <td>${prodBtn(p.id, prods(p), ro)}</td>
               ${months.map(k => {
                 const before = p.recruited && k < p.recruited;
@@ -855,7 +867,7 @@ form.stack { display: grid; gap: 12px; }
               }).join("")}
               <td class="n"><b>${fmt(tot)}</b></td></tr>`;
           }).join("")}</tbody>
-          <tfoot><tr><td class="sticky">Total</td><td></td><td></td><td></td><td></td>${colTot.map((v, i) => `<td class="n ${months[i] === CUR ? "cur" : ""}">${months[i] > CUR ? "" : fmt(v)}</td>`).join("")}<td class="n">${fmt(yearTot)}</td></tr></tfoot>
+          <tfoot><tr><td class="sticky">Total</td><td></td><td></td><td></td><td></td><td></td>${colTot.map((v, i) => `<td class="n ${months[i] === CUR ? "cur" : ""}">${months[i] > CUR ? "" : fmt(v)}</td>`).join("")}<td class="n">${fmt(yearTot)}</td></tr></tfoot>
         </table></div>`
           : `<div class="empty"><strong>Aucun partenaire à afficher</strong><span>${S.partners.length ? "Changez l'année, le commercial ou la recherche." : "Ajoutez votre premier partenaire avec le formulaire ci-dessus."}</span></div>`}
       </div>
@@ -887,12 +899,12 @@ form.stack { display: grid; gap: 12px; }
           <label class="field"><span>Rechercher</span><input type="text" id="pq" value="${esc(ui.partnerQ)}" placeholder="Nom du partenaire"></label>
           <label class="field"><span>Commercial</span><select id="pRep"><option value="all">Tous</option>${sortedReps().map(r => `<option value="${r.id}" ${ui.partnerRep === r.id ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select></label>
         </div></div>
-      ${ps.length ? `<div class="tbl-wrap"><table class="t"><thead><tr><th>Partenaire</th><th>OIP</th><th>Type</th><th>Type de produit DFP</th><th>Commercial</th><th>Recruté</th><th class="n">Mois saisis</th><th class="n">MRR cumulé</th><th class="n">Dernier mois</th><th></th></tr></thead><tbody>
+      ${ps.length ? `<div class="tbl-wrap"><table class="t"><thead><tr><th>Partenaire</th><th>OIP</th><th>Type</th><th>Statut HubSpot</th><th>Type de produit DFP</th><th>Commercial</th><th>Recruté</th><th class="n">Mois saisis</th><th class="n">MRR cumulé</th><th class="n">Dernier mois</th><th></th></tr></thead><tbody>
         ${ps.map(p => {
           const ks = Object.keys(p.mrr || {}).filter(k => mrrOf(p, k) > 0).sort();
           const last = ks[ks.length - 1];
           const cum = ks.reduce((s, k) => s + mrrOf(p, k), 0);
-          return `<tr><td><b>${esc(p.name)}</b>${dupChip(dups, p)}</td><td class="${p.oip ? "" : "muted"}">${p.oip ? esc(p.oip) : "—"}</td><td class="${p.ptype ? "" : "muted"}">${p.ptype ? esc(ptypeLabel(p.ptype)) : "—"}</td><td class="${prods(p).length ? "" : "muted"}">${prods(p).length ? esc(prods(p).join(", ")) : "—"}</td><td>${esc(repName(p.repId))}</td><td class="num">${p.recruited ? mLong(p.recruited) : "—"}</td><td class="n">${ks.length}</td><td class="n"><b>${fmt(cum)}</b></td><td class="n muted">${last ? mLabel(last) + " · " + fmt(mrrOf(p, last)) : "—"}</td>
+          return `<tr><td><b>${esc(p.name)}</b>${dupChip(dups, p)}</td><td class="${p.oip ? "" : "muted"}">${p.oip ? esc(p.oip) : "—"}</td><td class="${p.ptype ? "" : "muted"}">${p.ptype ? esc(ptypeLabel(p.ptype)) : "—"}</td><td>${p.hsStatus ? `<span class="chip ${p.hsStatus === "recrute" ? "good" : "warn"}">${esc(hsLabel(p.hsStatus))}</span>` : '<span class="muted">—</span>'}</td><td class="${prods(p).length ? "" : "muted"}">${prods(p).length ? esc(prods(p).join(", ")) : "—"}</td><td>${esc(repName(p.repId))}</td><td class="num">${p.recruited ? mLong(p.recruited) : "—"}</td><td class="n">${ks.length}</td><td class="n"><b>${fmt(cum)}</b></td><td class="n muted">${last ? mLabel(last) + " · " + fmt(mrrOf(p, last)) : "—"}</td>
             <td class="n"><div class="row-actions">${ro ? "" : `<button class="btn ghost" data-edit="${p.id}">Modifier</button>${delBtn(p)}`}</div></td></tr>`;
         }).join("")}</tbody></table></div>`
         : `<div class="empty"><strong>Aucun partenaire trouvé</strong><span>${S.partners.length ? "Modifiez la recherche ou le filtre." : "Ajoutez votre premier partenaire depuis l'onglet « Saisie MRR »."}</span>${!S.partners.length && !ro ? `<button class="btn primary" data-goto="entry">Ajouter un partenaire</button>` : ""}</div>`}
@@ -1469,6 +1481,7 @@ form.stack { display: grid; gap: 12px; }
         <label class="field"><span>Mois de recrutement</span><input type="month" id="ed-month" value="${p.recruited || ""}" max="${CUR}" required></label>
         <label class="field"><span>OIP</span><input type="text" id="ed-oip" value="${esc(p.oip || "")}" maxlength="60"></label>
         <label class="field"><span>Type de partenaire</span><select id="ed-type">${ptypeOptions(p.ptype || "", "— À préciser —")}</select></label>
+        <label class="field"><span>Statut HubSpot</span><select id="ed-hs">${hsOptions(p.hsStatus || "")}</select></label>
         <div class="field"><span>Type de produit DFP</span><div id="edProdWrap">${prodBtn("edit", editProducts, false, true)}</div></div>
         <div class="acts"><button type="button" class="btn danger" id="ed-del">Supprimer</button>
           <span style="display:flex;gap:8px"><button type="button" class="btn" id="ed-cancel">Annuler</button><button type="submit" class="btn primary">Enregistrer</button></span></div>
@@ -1485,7 +1498,7 @@ form.stack { display: grid; gap: 12px; }
     };
     $("#editForm").onsubmit = async e => {
       e.preventDefault();
-      const np = { ...p, mrr: { ...(p.mrr || {}) }, name: $("#ed-name").value.trim(), repId: $("#ed-rep").value, recruited: $("#ed-month").value, oip: $("#ed-oip").value.trim(), ptype: $("#ed-type").value, products: [...editProducts], product: undefined, updatedAt: Date.now() };
+      const np = { ...p, mrr: { ...(p.mrr || {}) }, name: $("#ed-name").value.trim(), repId: $("#ed-rep").value, recruited: $("#ed-month").value, oip: $("#ed-oip").value.trim(), ptype: $("#ed-type").value, hsStatus: $("#ed-hs").value, products: [...editProducts], product: undefined, updatedAt: Date.now() };
       if (!np.name) return;
       close(); await guarded(() => api.savePartner(np), "Partenaire mis à jour");
     };
@@ -1564,8 +1577,8 @@ form.stack { display: grid; gap: 12px; }
 
   // ---------- CSV ----------
   function csv() {
-    const rows = [["Partenaire", "OIP", "Type de partenaire", "Type de produit DFP", "Commercial", "Mois de recrutement", "Mois", "MRR (EUR)"]];
-    for (const p of S.partners) for (const k of Object.keys(p.mrr || {}).sort()) if (mrrOf(p, k)) rows.push([p.name, p.oip || "", ptypeLabel(p.ptype), prods(p).join(", "), repName(p.repId), p.recruited || "", k, mrrOf(p, k).toFixed(2).replace(".", ",")]);
+    const rows = [["Partenaire", "OIP", "Type de partenaire", "Statut HubSpot", "Type de produit DFP", "Commercial", "Mois de recrutement", "Mois", "MRR (EUR)"]];
+    for (const p of S.partners) for (const k of Object.keys(p.mrr || {}).sort()) if (mrrOf(p, k)) rows.push([p.name, p.oip || "", ptypeLabel(p.ptype), hsLabel(p.hsStatus), prods(p).join(", "), repName(p.repId), p.recruited || "", k, mrrOf(p, k).toFixed(2).replace(".", ",")]);
     return "﻿" + rows.map(r => r.map(c => /[";\n]/.test(String(c)) ? `"${String(c).replace(/"/g, '""')}"` : c).join(";")).join("\n");
   }
   async function exportCsv() {
@@ -1627,7 +1640,7 @@ form.stack { display: grid; gap: 12px; }
     }
     const act = t.dataset.act;
     if (act === "export") exportCsv();
-    if (act === "clearFilters") { ui.fType = "all"; ui.fProd = "all"; render(); }
+    if (act === "clearFilters") { ui.fType = "all"; ui.fProd = "all"; ui.fHs = "all"; render(); }
     if (act === "changes") openChanges();
     if (act === "import") openImport();
     if (act === "demo") loadDemo();
@@ -1649,6 +1662,7 @@ form.stack { display: grid; gap: 12px; }
     if (t.id === "detRep") { ui.detRep = t.value; render(); }
     if (t.id === "fType") { ui.fType = t.value; render(); }
     if (t.id === "fProd") { ui.fProd = t.value; render(); }
+    if (t.id === "fHs") { ui.fHs = t.value; render(); }
     if (t.id === "teamYear") { ui.teamYear = +t.value; render(); }
     if (t.classList.contains("mrr-in")) {
       const p = S.partners.find(x => x.id === t.dataset.pid);
@@ -1662,6 +1676,11 @@ form.stack { display: grid; gap: 12px; }
       const mrr = { ...(p.mrr || {}) };
       if (v === null) delete mrr[mk]; else mrr[mk] = v;
       await guarded(() => api.savePartner({ ...p, mrr, updatedAt: Date.now() }), `${p.name} · ${mLong(mk)} : ${v === null ? "montant effacé" : fmt(v) + " enregistré"}`);
+    }
+    if (t.classList.contains("hs-in")) {
+      const p = S.partners.find(x => x.id === t.dataset.pid);
+      if (!p || (p.hsStatus || "") === t.value) return;
+      await guarded(() => api.savePartner({ ...p, hsStatus: t.value, updatedAt: Date.now() }), `${p.name} : ${t.value ? hsLabel(t.value) : "statut HubSpot effacé"}`);
     }
     if (t.classList.contains("ptype-in")) {
       const p = S.partners.find(x => x.id === t.dataset.pid);
