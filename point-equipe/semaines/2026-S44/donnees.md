@@ -21,3 +21,6 @@ Inchangés (pas de mise à jour reçue) : boîte à idées des commerciaux, clea
 ## Toutes les transactions (pipeline Prospection partenaire)
 - Source : `export-hubspot-toutes-transactions.xlsx` (26/10/2026), 237 transactions : Fermé perdu 52, Partenaire recruté 50, Rendez-vous planifié 48, Pitch réalisé 30, Intérêt confirmé (deal) 25, Prêt pour formation 18, Formulaire renseigné 7, Approbation du partenaire 7.
 - Demande : nombre de transactions sans mouvement depuis plus de 30 jours et sans contact depuis plus de 30 jours. **Non calculable** : l'export ne contient ni date de dernière modification, ni date de dernière activité / dernier contact.
+- Ouvertes : 135 (hors Partenaire recruté et Fermé perdu). Indicateur de remplacement : 62 ont une date de fermeture passée, dont 45 depuis plus de 30 jours (Mathys Bechu 15, Alain Babaci 12, Vincent Del Campo 6, Tristan Eckel 6 (désactivé), Jonathan Zbinden 3, Eric Maury 2 (désactivé), Matthis Le Castrec 1).
+- 8 transactions ouvertes appartiennent à des utilisateurs désactivés.
+- Slides « Prospection partenaires » et « Deals inactifs » ajoutées au deck challenge S44.
