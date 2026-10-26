@@ -23,3 +23,6 @@ Projets par commercial (lus sur le graphique empilé) : Corinne Baroukh 3 détec
 2. Les projets clients finaux augmentent (+5), portés par deux commerciaux qui n'en avaient pas (Mathys, Sylvain) et par Vincent.
 3. Aucun nouveau passage en « Deal en cours » et un premier projet perdu (Corinne).
 4. Sans export, impossible de vérifier les dates de closing (6 étaient prévues en octobre) ni la qualité des données.
+
+## Projets signés (communiqués le 26/10, hors export)
+- 2 projets clients finaux signés : **Alter Eg'eau** et **Pharmamouth**. Ajoutés à la synthèse du deck.
