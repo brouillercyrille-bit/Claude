@@ -10,9 +10,9 @@ Exports S42 et S43 non reçus : comparaison avec la S41 (05/10).
 - Objectif : non fourni.
 
 ## Points de qualité
-- 7 transactions « Prêt pour formation » ont une date de fermeture déjà passée (juin à septembre 2026).
+- 8 transactions « Prêt pour formation » ont une date de fermeture déjà passée (du 17/06 au 09/10/2026).
 - 2 transactions « Prêt pour formation » appartiennent à des utilisateurs désactivés (GPCONSULT - ALTER ILLICO, ACESI GROUP).
-- Dates d'entrée en « Partenaire recruté » saisies en masse : 9 le 25/09 entre 14h37 et 14h42, 4 le 29/01 à 10h27.
+- Dates d'entrée en « Partenaire recruté » saisies en masse : 11 le 25/09 entre 14h37 et 14h42, 4 le 29/01 à 10h27.
 - Écart entre trimestre de recrutement (date d'entrée dans la phase) et trimestre de fermeture : T1 22 vs 12, T2 11 vs 21.
 
 ## Projets ops en cours
