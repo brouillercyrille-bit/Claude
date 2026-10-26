@@ -17,3 +17,7 @@ Exports S42 et S43 non reçus : comparaison avec la S41 (05/10).
 
 ## Projets ops en cours
 Inchangés (pas de mise à jour reçue) : boîte à idées des commerciaux, clean des contacts (nom et prénom), renseigner l'intégration avec l'outil IA.
+
+## Toutes les transactions (pipeline Prospection partenaire)
+- Source : `export-hubspot-toutes-transactions.xlsx` (26/10/2026), 237 transactions : Fermé perdu 52, Partenaire recruté 50, Rendez-vous planifié 48, Pitch réalisé 30, Intérêt confirmé (deal) 25, Prêt pour formation 18, Formulaire renseigné 7, Approbation du partenaire 7.
+- Demande : nombre de transactions sans mouvement depuis plus de 30 jours et sans contact depuis plus de 30 jours. **Non calculable** : l'export ne contient ni date de dernière modification, ni date de dernière activité / dernier contact.
