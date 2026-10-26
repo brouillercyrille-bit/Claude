@@ -1,0 +1,136 @@
+transaction_id,nom_transaction,commercial,phase,entree_phase,dernier_contact,jours_phase,jours_contact,immobile,sans_contact,immobile_et_sans_contact
+504793317587,Wipple - Digital Assistant,Alain Babaci,Formulaire renseigné,2026-05-29 17:30:00,2026-06-15 14:00:00,149,132.0,True,True,True
+436341162228,PENTA31 - Eric Truchi (becloud),Alain Babaci,Formulaire renseigné,2026-05-29 17:21:00,2026-09-29 17:54:00,149,26.0,True,False,False
+521452404983,Proxiel Flowcord,Alain Babaci,Intérêt confirmé (deal),2026-09-14 15:24:00,2026-10-20 09:30:00,41,5.0,True,False,False
+494498860234,Edipoles,Alain Babaci,Pitch réalisé,2026-05-28 17:50:00,2026-05-28 17:47:00,150,150.0,True,True,True
+462061087936,USTA'INFO,Alain Babaci,Pitch réalisé,2026-02-06 10:35:00,2026-02-05 11:00:00,261,262.0,True,True,True
+436959972571,PROMETECH Adrien Savignac (Becloud),Alain Babaci,Pitch réalisé,2026-02-10 17:58:00,2026-09-29 17:48:00,257,26.0,True,False,False
+428654048442,OVEA - Reprise parc Alphalink,Alain Babaci,Pitch réalisé,2026-01-12 10:41:00,2026-10-23 16:47:00,286,2.0,True,False,False
+428653326583,NEXIS I.T. - Reprise parc Alphalink,Alain Babaci,Pitch réalisé,2026-01-12 10:41:00,2026-10-20 14:00:00,286,5.0,True,False,False
+410373023964,ACP 64,Alain Babaci,Pitch réalisé,2025-12-17 10:31:00,2026-04-28 15:58:00,312,180.0,True,True,True
+410630767850,MON AMI CLOUD,Alain Babaci,Pitch réalisé,2025-12-17 10:20:00,2026-04-28 16:15:00,312,180.0,True,True,True
+521452404943,LE BUREAU DES TELECOMS SUD OUEST (nouvelle entité),Alain Babaci,Prêt pour formation,2026-09-18 11:14:00,,37,,True,True,True
+521452408010,ATARAXIE - trunks SIP Flowcord,Alain Babaci,Rendez-vous planifié,2026-09-14 15:28:00,2026-10-02 10:00:00,41,23.0,True,False,False
+498501034196,DLDV,Alain Babaci,Rendez-vous planifié,2026-04-10 10:09:00,2026-09-29 17:47:00,198,26.0,True,False,False
+496100075766,FORTILINK,Alain Babaci,Rendez-vous planifié,2026-03-30 14:43:00,2026-04-07 14:00:00,209,201.0,True,True,True
+496066589897,Homni,Alain Babaci,Rendez-vous planifié,2026-03-27 16:29:00,2026-04-21 09:26:00,212,187.0,True,True,True
+509447946468,HAISOFT-PROJET PARTENARIAT,Christophe Dorey,Intérêt confirmé (deal),2026-07-07 16:22:00,,110,,True,True,True
+485772992734,BECALL - PROJET PARTENARIAT,Christophe Dorey,Intérêt confirmé (deal),2026-03-03 15:58:00,2026-09-29 14:17:00,236,26.0,True,False,False
+467645257931,HWITS : PROJET PARTENARIAT,Christophe Dorey,Intérêt confirmé (deal),2026-03-04 17:32:00,2026-03-10 15:11:00,235,229.0,True,True,True
+467642248387,HELIXIS INFORMATIQUE - PROJET PARTENARIAT,Christophe Dorey,Intérêt confirmé (deal),2026-03-03 15:58:00,2026-05-05 14:55:00,236,173.0,True,True,True
+466802604223,STARSYS INFO - PROJET PARTENARIAT,Christophe Dorey,Intérêt confirmé (deal),2026-02-16 09:55:00,2026-02-23 10:40:00,251,244.0,True,True,True
+433375923394,FULL CONCEPT SOLUTIONS - PROJET PARTENARIAT,Christophe Dorey,Intérêt confirmé (deal),2026-01-30 11:26:00,2026-02-26 16:12:00,268,241.0,True,True,True
+191847404762,JGS INFORMATIQUE: PROJET PARTENARIAT,Christophe Dorey,Intérêt confirmé (deal),2026-04-16 10:08:00,2026-10-21 16:34:00,192,4.0,True,False,False
+479225531618,COURTAGE TELECOMS ENTREPRISES - PROJET PARTENARIAT,Christophe Dorey,Pitch réalisé,2026-03-13 10:35:00,,226,,True,True,True
+480182823119,CEDELIA INFORMATIQUE - PROJET PARTENARIAT,Christophe Dorey,Prêt pour formation,2026-10-26 10:15:00,2026-10-20 09:51:00,-1,5.0,False,False,False
+467642247407,OCEANET - PROJET PARTENARIAT,Christophe Dorey,Prêt pour formation,2026-04-21 10:28:00,2026-07-09 17:31:00,187,108.0,True,True,True
+500198547704,FCS INFORMATIQUE - PROJET PARTENARIAT,Christophe Dorey,Rendez-vous planifié,2026-04-24 14:51:00,2026-06-03 08:52:00,184,144.0,True,True,True
+467640092880,CYBERSPACE 21 : PROJET PARTENARIAT,Christophe Dorey,Rendez-vous planifié,2026-02-11 16:04:00,,256,,True,True,True
+467395299562,S.A.S FRANCHE-COMTEL - PROJET PARTENARIAT,Christophe Dorey,Rendez-vous planifié,2026-02-11 12:08:00,,256,,True,True,True
+493677203652,W3TEL ,Corinne Baroukh,Pitch réalisé,2026-03-12 11:33:00,2026-10-14 10:18:00,227,11.0,True,False,False
+529400369348,PRIMAXION AMBASSADEUR,Corinne Baroukh,Prêt pour formation,2026-10-26 10:14:00,,-1,,False,True,False
+524171683029,TH DEVELOPPEMENT  Réactivation ,Corinne Baroukh,Prêt pour formation,2026-10-02 11:04:00,,23,,False,True,False
+521166292200,AISNE SECURITE NOUVEL AMBASSADEUR ,Corinne Baroukh,Prêt pour formation,2026-09-18 11:11:00,2026-10-22 14:59:00,37,3.0,True,False,False
+520863034567,IT-BLOCK,Corinne Baroukh,Prêt pour formation,2026-09-11 10:25:00,2026-10-23 10:15:00,44,2.0,True,False,False
+509448754411,MSI NORD ,Corinne Baroukh,Rendez-vous planifié,2026-07-08 17:59:00,,109,,True,True,True
+509473739991,HI TECH CONCEPT REACTIVATION,Corinne Baroukh,Rendez-vous planifié,2026-07-08 14:42:00,,109,,True,True,True
+427714506985,SWAP INFORMATIQUE ,Corinne Baroukh,Rendez-vous planifié,2026-01-09 14:56:00,2026-09-14 14:54:00,289,41.0,True,True,True
+427709373641,IT SYSTEMES,Corinne Baroukh,Rendez-vous planifié,2026-01-08 14:25:00,2026-01-23 11:14:00,290,275.0,True,True,True
+509473804501,TEST Matthis,Cyrille Brouiller,Rendez-vous planifié,2026-07-08 15:18:00,,109,,True,True,True
+404189258961,TG Consult,Eric Maury,Intérêt confirmé (deal),2025-12-11 17:30:00,2026-03-30 14:53:00,318,209.0,True,True,True
+410335205592,GPCONSULT- ALTER ILLICO,Eric Maury,Prêt pour formation,2026-02-12 11:17:00,2026-04-13 16:55:00,255,195.0,True,True,True
+514749435092,IPE SOLUTIONS INFROMATIQUE,Jennifer Pereira,Approbation du partenaire,2026-10-08 16:22:00,2026-10-16 18:08:00,17,9.0,False,False,False
+509445721276,Exovision,Jennifer Pereira,Approbation du partenaire,2026-07-10 15:48:00,2026-10-19 18:36:00,107,6.0,True,False,False
+515192686834,ITV SYSTEM (Réveil),Jennifer Pereira,Intérêt confirmé (deal),2026-08-07 17:54:00,,79,,True,True,True
+492191825107,Veliacom,Jennifer Pereira,Intérêt confirmé (deal),2026-09-01 15:48:00,2026-09-30 15:34:00,54,25.0,True,False,False
+452304230622,NETROCK,Jennifer Pereira,Pitch réalisé,2026-07-02 15:41:00,2026-09-30 15:30:00,115,25.0,True,False,False
+432215738572,COPIATEL,Jennifer Pereira,Pitch réalisé,2026-07-02 15:41:00,2026-09-30 15:27:00,115,25.0,True,False,False
+525374938298,Calymera SAS,Jennifer Pereira,Prêt pour formation,2026-10-13 17:26:00,2026-10-21 14:28:00,12,4.0,False,False,False
+529404828891,e-Progest - DDA,Jennifer Pereira,Rendez-vous planifié,2026-10-21 16:53:00,,4,,False,True,False
+525369456884,SAS FISCHER,Jennifer Pereira,Rendez-vous planifié,2026-10-08 18:13:00,2026-10-16 09:42:00,17,9.0,False,False,False
+525373161721,ORCHESTRIA-SOLUTIONS,Jennifer Pereira,Rendez-vous planifié,2026-10-08 16:03:00,,17,,False,True,False
+493652672708,Atx Computer - recrutement Ambassadeur,Jonathan Zbinden,Intérêt confirmé (deal),2026-03-18 16:48:00,2026-01-15 11:00:00,221,283.0,True,True,True
+523942564034,MYDEN GROUP,Jonathan Zbinden,Prêt pour formation,2026-10-02 11:05:00,2026-10-21 12:18:00,23,4.0,False,False,False
+504644596972,utello.io  - New Partner,Jonathan Zbinden,Prêt pour formation,2026-06-01 15:00:00,2026-09-23 14:56:00,146,32.0,True,True,True
+521465078976,IT Monaco - Informatique Technologie Consulting,Jonathan Zbinden,Rendez-vous planifié,2026-09-17 16:14:00,2026-10-14 15:33:00,38,11.0,True,False,False
+494470015216,VDI Télécom - Prospect Opérateur,Jonathan Zbinden,Rendez-vous planifié,2026-03-19 11:40:00,2026-10-19 09:18:00,220,6.0,True,False,False
+204148972732,ATHOMES SOLUTIONS - 	4721 forfaits,Jonathan Zbinden,Rendez-vous planifié,2026-03-19 11:42:00,2026-03-13 14:51:00,220,226.0,True,True,True
+477194205371,Bellême informatique,Mathys Bechu,Intérêt confirmé (deal),2026-10-08 14:26:00,2026-10-07 11:08:00,17,18.0,False,False,False
+477261428985,STRAPP,Mathys Bechu,Intérêt confirmé (deal),2026-05-22 09:08:00,2026-03-04 15:22:00,156,235.0,True,True,True
+493653373145,VFLIT,Mathys Bechu,Pitch réalisé,2026-03-12 10:51:00,,227,,True,True,True
+491920707831,AJ PHONE,Mathys Bechu,Pitch réalisé,2026-03-18 10:56:00,2026-09-30 12:23:00,221,25.0,True,False,False
+474192527609,Burologic,Mathys Bechu,Pitch réalisé,2026-02-19 12:07:00,,248,,True,True,True
+444273713342,SCMICRO - Nouvel élément : Deal,Mathys Bechu,Pitch réalisé,2026-03-12 16:46:00,2026-01-29 15:11:00,227,269.0,True,True,True
+513634795752,YEZH!,Mathys Bechu,Prêt pour formation,2026-09-15 16:44:00,2026-10-19 15:00:00,40,6.0,True,False,False
+494470702328,Caux Télécom,Mathys Bechu,Prêt pour formation,2026-06-01 15:06:00,2026-10-23 09:33:00,146,2.0,True,False,False
+527474159820,LConnect,Mathys Bechu,Rendez-vous planifié,2026-10-19 14:15:00,2026-10-23 16:29:00,6,2.0,False,False,False
+505385400514,TELINCY,Mathys Bechu,Rendez-vous planifié,2026-06-05 11:07:00,2026-06-10 14:30:00,142,137.0,True,True,True
+495674460354,OCALL,Mathys Bechu,Rendez-vous planifié,2026-03-26 16:11:00,2026-06-08 16:03:00,213,139.0,True,True,True
+494498822376,LD TELECOMS,Mathys Bechu,Rendez-vous planifié,2026-03-19 11:58:00,2026-09-23 16:36:00,220,32.0,True,True,True
+494468501732,Vacom-IT,Mathys Bechu,Rendez-vous planifié,2026-03-18 15:24:00,2026-04-03 11:00:00,221,205.0,True,True,True
+494190743759,ECOTELECOMS,Mathys Bechu,Rendez-vous planifié,2026-03-18 11:38:00,2026-04-27 15:00:00,221,181.0,True,True,True
+479353370833,LEON INFORMATIQUE,Mathys Bechu,Rendez-vous planifié,2026-02-25 16:34:00,2026-03-18 12:10:00,242,221.0,True,True,True
+461226026176,Bellême Informatique,Mathys Bechu,Rendez-vous planifié,2026-02-06 17:00:00,2026-10-07 11:08:00,261,18.0,True,False,False
+437881063619,BREIZH SOLUTIONS - Nouvel élément : Deal,Mathys Bechu,Rendez-vous planifié,2026-01-19 10:27:00,,279,,True,True,True
+529773910237,Horezo,Matthis Le Castrec,Rendez-vous planifié,2026-10-21 17:26:00,,4,,False,True,False
+511458084036,testtttttttttttttttt,Matthis Le Castrec,Rendez-vous planifié,2026-07-21 14:53:00,2026-09-25 11:02:00,96,30.0,True,True,True
+503208543450,Groupe MIXTRIO,Matthis Le Castrec,Rendez-vous planifié,2026-05-20 16:40:00,2026-06-02 10:00:00,158,145.0,True,True,True
+496774427841,ASTERIAN,Stéphanie Martinage,Intérêt confirmé (deal),2026-04-14 16:20:00,2026-04-15 10:54:00,194,193.0,True,True,True
+442980569300,ACS,Stéphanie Martinage,Intérêt confirmé (deal),2026-02-12 09:56:00,2026-03-02 10:59:00,255,237.0,True,True,True
+441503302865,SOLUCE TELECOM ,Stéphanie Martinage,Intérêt confirmé (deal),2026-02-12 09:56:00,2026-02-09 10:27:00,255,258.0,True,True,True
+437881061568,GC Développement ,Stéphanie Martinage,Intérêt confirmé (deal),2026-02-12 09:56:00,2026-10-14 09:36:00,255,11.0,True,False,False
+487234251991,YOUREZO,Stéphanie Martinage,Pitch réalisé,2026-09-15 09:44:00,2026-09-17 12:13:00,40,38.0,True,True,True
+437881067732,EXA TECHNOLOGIES - Nouvel élément : Deal,Stéphanie Martinage,Pitch réalisé,2026-01-19 10:39:00,,279,,True,True,True
+437881045180,N'CO Services - Nouvel élément : Deal,Stéphanie Martinage,Pitch réalisé,2026-01-19 09:18:00,2026-04-17 11:17:00,279,191.0,True,True,True
+513627559140,TechTelecom ,Stéphanie Martinage,Prêt pour formation,2026-09-10 17:19:00,2026-10-22 14:31:00,45,3.0,True,False,False
+454387855596,Alesta Computer,Stéphanie Martinage,Prêt pour formation,2026-10-19 16:48:00,2026-10-23 15:26:00,6,2.0,False,False,False
+413219011788,ipvcom-informatique,Stéphanie Martinage,Prêt pour formation,2026-01-30 15:11:00,2026-03-04 10:37:00,268,235.0,True,True,True
+525372385483,TAORA,Stéphanie Martinage,Rendez-vous planifié,2026-10-12 17:37:00,2026-10-22 14:00:00,13,3.0,False,False,False
+500882474202,Easy Service Informatique,Stéphanie Martinage,Rendez-vous planifié,2026-04-28 17:51:00,2026-10-22 15:33:00,180,3.0,True,False,False
+496751713510,IPTrend,Stéphanie Martinage,Rendez-vous planifié,2026-04-02 14:14:00,2026-05-06 18:02:00,206,172.0,True,True,True
+485112024300,SERVEDIS-IT,Stéphanie Martinage,Rendez-vous planifié,2026-03-03 09:58:00,,236,,True,True,True
+477194203339,BSCOM - Nouvel élément : Deal,Stéphanie Martinage,Rendez-vous planifié,2026-02-23 09:58:00,,244,,True,True,True
+467645170925,IGOFLEX,Stéphanie Martinage,Rendez-vous planifié,2026-02-12 09:59:00,2026-02-20 16:30:00,255,247.0,True,True,True
+441503301840,VELCO - Nouvel élément : Deal,Stéphanie Martinage,Rendez-vous planifié,2026-01-19 10:25:00,2026-01-15 11:15:00,279,283.0,True,True,True
+440881515769,UnifyTelecom - Nouvel élément : Deal,Stéphanie Martinage,Rendez-vous planifié,2026-01-19 09:25:00,,279,,True,True,True
+509470224626,CI SOLUTIONS,Sylvain Gotrand,Intérêt confirmé (deal),2026-10-21 11:16:00,2026-10-09 10:35:00,4,16.0,False,False,False
+446523671743,IRCF,Sylvain Gotrand,Intérêt confirmé (deal),2026-02-25 16:11:00,2026-03-02 11:57:00,242,237.0,True,True,True
+406472568040,ALARME TELECOM SERVICE,Sylvain Gotrand,Intérêt confirmé (deal),2026-01-30 10:23:00,2026-03-19 10:00:00,268,220.0,True,True,True
+505110793465,Call2Teams - Groupe MIXTRIO,Sylvain Gotrand,Pitch réalisé,2026-06-04 09:08:00,2026-06-02 10:00:00,143,145.0,True,True,True
+499552372950,FB17 TELECOM,Sylvain Gotrand,Pitch réalisé,2026-05-19 10:36:00,2026-05-19 09:30:00,159,159.0,True,True,True
+495713146080,Pacetel,Sylvain Gotrand,Pitch réalisé,2026-04-22 13:36:00,2026-04-22 11:08:00,186,186.0,True,True,True
+442541619445,IT Factory 16,Sylvain Gotrand,Pitch réalisé,2026-01-20 11:45:00,2026-01-21 15:53:00,278,277.0,True,True,True
+410373736652,INFOCOM,Sylvain Gotrand,Pitch réalisé,2025-12-17 10:14:00,2026-03-19 10:00:00,312,220.0,True,True,True
+514043330765,IP FOCUS,Sylvain Gotrand,Rendez-vous planifié,2026-07-31 11:06:00,,86,,True,True,True
+498499224819,R'LAN,Sylvain Gotrand,Rendez-vous planifié,2026-04-13 11:21:00,2026-07-24 10:00:00,195,93.0,True,True,True
+496003415255,APIMAS,Sylvain Gotrand,Rendez-vous planifié,2026-03-30 15:13:00,2026-04-28 14:05:00,209,180.0,True,True,True
+495183163607,Titan,Sylvain Gotrand,Rendez-vous planifié,2026-03-25 09:58:00,2026-07-07 09:00:00,214,110.0,True,True,True
+406155548904,WISESTORCK TECHNOLOGIE,Sylvain Gotrand,Rendez-vous planifié,2025-12-12 09:52:00,2026-02-03 10:00:00,317,264.0,True,True,True
+432167196864,NT2SI,Tristan Eckel,Pitch réalisé,2026-01-13 09:53:00,2026-01-13 16:08:00,285,285.0,True,True,True
+405727015108,NEVAONE,Tristan Eckel,Pitch réalisé,2025-12-12 16:05:00,2026-02-09 10:39:00,317,258.0,True,True,True
+406205317363,ARIS informatique,Tristan Eckel,Pitch réalisé,2025-12-12 16:01:00,2026-01-23 14:34:00,317,275.0,True,True,True
+405727014077,OPTICOD,Tristan Eckel,Pitch réalisé,2025-12-12 15:58:00,2026-03-02 09:20:00,317,237.0,True,True,True
+405654848702,ACESI GROUP,Tristan Eckel,Prêt pour formation,2026-02-16 16:23:00,2026-05-07 10:33:00,251,171.0,True,True,True
+494472351947,Loria Télécom,Tristan Eckel,Rendez-vous planifié,2026-03-20 11:20:00,2026-03-24 17:57:00,219,215.0,True,True,True
+508101127395,vsa informatique - Nouvel élément : Deal,Vincent Del Campo,Approbation du partenaire,2026-06-29 14:16:00,2026-06-29 14:06:00,118,118.0,True,True,True
+467110152396,Be Cloud - Nouvel élément : Deal,Vincent Del Campo,Approbation du partenaire,2026-03-11 08:47:00,2026-01-28 15:00:00,228,270.0,True,True,True
+430767973613,INTELLIX onboarding,Vincent Del Campo,Approbation du partenaire,2026-01-13 11:19:00,2026-02-18 15:30:00,285,249.0,True,True,True
+505111656686,OXIALE - Nouvel élément : Deal,Vincent Del Campo,Formulaire renseigné,2026-06-05 08:48:00,2026-05-26 09:50:00,142,152.0,True,True,True
+494815986908,lumos it - Nouvel élément : Deal,Vincent Del Campo,Formulaire renseigné,2026-03-23 09:46:00,2026-06-04 09:48:00,216,143.0,True,True,True
+494013634752,Lumos - Nouvel élément : Deal,Vincent Del Campo,Formulaire renseigné,2026-03-23 10:58:00,2026-03-16 15:57:00,216,223.0,True,True,True
+441955725555,Up-Sales - ambassadeur,Vincent Del Campo,Formulaire renseigné,2026-01-19 15:30:00,2026-08-05 14:00:00,279,81.0,True,True,True
+433808194785,BBI France SAS - onboarding,Vincent Del Campo,Formulaire renseigné,2026-01-23 15:00:00,2026-01-13 14:58:00,275,285.0,True,True,True
+505744297170,matelot it - Nouvel élément : Deal,Vincent Del Campo,Intérêt confirmé (deal),2026-06-12 14:19:00,2026-06-22 16:16:00,135,125.0,True,True,True
+501540372701,DIAVICOM - passage operateur ( reveil),Vincent Del Campo,Intérêt confirmé (deal),2026-05-27 15:09:00,2026-10-12 12:31:00,151,13.0,True,False,False
+465006499051,pic conect produnet - Nouvel élément : Deal,Vincent Del Campo,Intérêt confirmé (deal),2026-03-23 10:59:00,2026-03-18 11:33:00,216,221.0,True,True,True
+427714436339,SWIFTCOM.FR - pp,Vincent Del Campo,Intérêt confirmé (deal),2026-01-09 09:33:00,2026-05-12 10:57:00,289,166.0,True,True,True
+505922778312,ALDENE DS - Nouvel élément : Deal,Vincent Del Campo,Pitch réalisé,2026-06-12 14:50:00,2026-06-12 14:36:00,135,135.0,True,True,True
+496306247922,joyand business prospection,Vincent Del Campo,Pitch réalisé,2026-05-26 09:58:00,2026-09-17 14:33:00,152,38.0,True,True,True
+441957873883,FranceLink,Vincent Del Campo,Pitch réalisé,2026-01-26 10:58:00,2026-01-28 11:30:00,272,270.0,True,True,True
+505241661664,AVEO SOLUTIONS - Nouvel élément : Deal,Vincent Del Campo,Prêt pour formation,2026-06-08 09:22:00,2026-07-03 15:59:00,139,114.0,True,True,True
+504550341823,DIAVICOM - pasqage operateur,Vincent Del Campo,Prêt pour formation,2026-05-29 10:15:00,2026-10-20 10:48:00,149,5.0,True,False,False
+491387755760,INOIA - Nouvel élément : Deal,Vincent Del Campo,Prêt pour formation,2026-03-10 09:48:00,2026-03-05 09:00:00,229,234.0,True,True,True
+494012197096,ABSYS - Nouvel élément : Deal,Vincent Del Campo,Rendez-vous planifié,2026-03-16 15:38:00,2026-08-24 10:56:00,223,62.0,True,True,True
+432215718126,Society Consulting - prosp part,Vincent Del Campo,Rendez-vous planifié,2026-01-13 10:04:00,2026-01-21 09:06:00,285,277.0,True,True,True
+431355434221,equation - prospection,Vincent Del Campo,Rendez-vous planifié,2026-01-12 09:57:00,2026-03-10 15:43:00,286,229.0,True,True,True
+431409067253,IT PARTNER - ms agent be cloud on boardinf,Vincent Del Campo,Rendez-vous planifié,2026-01-12 09:13:00,2026-04-13 17:35:00,286,195.0,True,True,True

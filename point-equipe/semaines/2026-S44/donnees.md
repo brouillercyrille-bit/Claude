@@ -24,3 +24,12 @@ Inchangés (pas de mise à jour reçue) : boîte à idées des commerciaux, clea
 - Ouvertes : 135 (hors Partenaire recruté et Fermé perdu). Indicateur de remplacement : 62 ont une date de fermeture passée, dont 45 depuis plus de 30 jours (Mathys Bechu 15, Alain Babaci 12, Vincent Del Campo 6, Tristan Eckel 6 (désactivé), Jonathan Zbinden 3, Eric Maury 2 (désactivé), Matthis Le Castrec 1).
 - 8 transactions ouvertes appartiennent à des utilisateurs désactivés.
 - Slides « Prospection partenaires » et « Deals inactifs » ajoutées au deck challenge S44.
+
+## Deals inactifs (export « État du pipe », 26/10/2026)
+- Source : `export-hubspot-etat-du-pipe.xlsx` (237 transactions, avec « Dernier contact » et dates d'entrée/sortie de chaque phase). Détail par deal : `deals-ouverts-inactivite.csv`.
+- Périmètre : 135 transactions ouvertes (hors Partenaire recruté et Fermé perdu). Phases : Rendez-vous planifié 48, Pitch réalisé 30, Intérêt confirmé (deal) 25, Prêt pour formation 20, Formulaire renseigné 7, Approbation du partenaire 5 (2 deals passés d'Approbation à Prêt pour formation depuis l'export du matin : PRIMAXION, CEDELIA).
+- **Sans mouvement > 30 jours** (entrée dans la phase actuelle avant le 26/09) : **120**.
+- **Sans contact > 30 jours** (dernier contact avant le 26/09 ou jamais) : **98**, dont 22 jamais contactés.
+- **Les deux** : **93**.
+- Par commercial (les deux / ouverts) : Vincent Del Campo 20/22, Stéphanie Martinage 13/18, Sylvain Gotrand 12/13, Mathys Bechu 11/17, Christophe Dorey 10/13, Alain Babaci 8/15, Tristan Eckel (désactivé) 6/6, Corinne Baroukh 4/9, Jonathan Zbinden 3/6, Matthis Le Castrec 2/3, Eric Maury (désactivé) 2/2, Cyrille Brouiller 1/1, Jennifer Pereira 1/10.
+- Médianes : 216 jours dans la phase actuelle, 144 jours depuis le dernier contact. 81 deals dans leur phase depuis plus de 6 mois.
