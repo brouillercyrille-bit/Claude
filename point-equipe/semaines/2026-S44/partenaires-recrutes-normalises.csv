@@ -1,0 +1,69 @@
+transaction_id,nom_transaction,commercial,date_fermeture,phase,date_pret_formation,produit,date_recrute,entreprise,entreprise_id
+521901694175,SYENOS,Stéphanie Martinage,2026-09-25 14:41:00,Partenaire récruté,2026-09-25 14:36:00,Accès internet; Cloud; Dstny UCaaS; Mobile; Téléphonie IP,2026-09-25 14:41:00,SYENOS,448291920058
+521166502117,BENEDETTI DRAZEN - Nouvel élément : Deal,Jonathan Zbinden,2026-09-25 14:37:00,Partenaire récruté,2026-09-15 16:01:00,Accès internet; Dstny UCaaS; Dstny Digital Assistant; Mobile; Services & Installations; Téléphonie IP,2026-09-25 14:37:00,BENEDETTI DRAZEN,447900627187
+521453737165,TCV CALL nouvel Opérateur ,Corinne Baroukh,2026-09-25 14:37:00,Partenaire récruté,2026-09-14 11:44:00,Accès internet; Cloud; Dstny UCaaS; Dstny Digital Assistant; Téléphonie IP,2026-09-25 14:37:00,TCV CALL,145654473976
+520860590314,JFM Audit Nouvel opérateur ,Corinne Baroukh,2026-09-25 14:39:00,Partenaire récruté,2026-09-11 10:25:00,Téléphonie IP; Accès internet; Mobile,2026-09-25 14:39:00,Groupe JFM Audit,7632078052
+518713550058,IBC DIALOG -,Mathys Bechu,2026-09-25 14:37:00,Partenaire récruté,2026-08-31 15:06:00,Accès internet; Téléphonie IP; Mobile; Call2Teams; Couverture GSM; Dstny Digital Assistant; VoIPcube,2026-09-25 14:37:00,IBC DIALOG,10018054374
+512056866025,IFBW - Nouveau partenaire opérateur ,Corinne Baroukh,2026-07-30 10:48:00,Partenaire récruté,2026-07-27 15:35:00,Accès internet; Téléphonie IP; Mobile,2026-07-30 10:48:00,IFBW,437323682003
+510546269417,EPM TELECOM - ,Mathys Bechu,2026-09-25 14:38:00,Partenaire récruté,2026-07-20 14:54:00,Accès internet; Téléphonie IP; Mobile; Dstny Digital Assistant,2026-09-25 14:38:00,EPM TELECOM,10061688031
+507748047065,TELVIVA,Jennifer Pereira,2026-09-03 17:03:00,Partenaire récruté,2026-08-03 15:31:00,Dstny UCaaS,2026-09-03 17:03:00,Telviva,434800918717
+505856058579,SINDORA - opérateur + UCaaS,Jonathan Zbinden,2026-09-24 11:20:00,Partenaire récruté,2026-06-12 17:11:00,Dstny UCaaS; Accès internet; Mobile; Dstny Digital Assistant,2026-09-25 14:42:00,SINDORA,341964862694
+504665256170,Altise (Bascule Ambassadeur vers Opérateur),Jennifer Pereira,2026-09-25 14:42:00,Partenaire récruté,2026-05-29 11:01:00,Téléphonie IP,2026-09-25 14:42:00,ALTISE,8367844795
+504550970600,HEXAGRAM - new ambassadeur,Vincent Del Campo,2026-09-25 14:38:00,Partenaire récruté,2026-06-01 14:51:00,Accès internet; Dstny UCaaS; Call2Teams; Dstny Digital Assistant; VoIPcube; Téléphonie IP,2026-09-25 14:38:00,HEXAGRAM,7877377006
+503485557964,ARTEVIS devenir Opérateur non Eshop,Sylvain Gotrand,2026-06-03 10:38:00,Partenaire récruté,2026-05-21 15:59:00,Accès internet; Dstny UCaaS; Téléphonie IP; Mobile; Dstny Digital Assistant,2026-06-03 10:38:00,ARTEVIS,7824673480
+502451968202,ARES TELECOM - réveil,Alain Babaci,2026-09-25 14:38:00,Partenaire récruté,2026-07-01 16:41:00,Dstny Digital Assistant; Dstny UCaaS; Mobile,2026-09-25 14:38:00,ARES SECURE,306170631386
+498046769362,A2I INFORMATIQUE,Stéphanie Martinage,2026-04-30 16:59:00,Partenaire récruté,2026-04-09 09:28:00,Accès internet; Dstny UCaaS; Téléphonie IP; Mobile,2026-04-30 16:59:00,A2I INFORMATIQUE,426064776378
+496652485852,COLOMBIA,Stéphanie Martinage,2026-09-15 09:45:00,Partenaire récruté,2026-07-06 16:09:00,Accès internet; Dstny UCaaS; Téléphonie IP; Mobile,2026-09-15 09:45:00,COLOMBIA,7961955043
+493472668913,Proxlan,Mathys Bechu,2026-04-15 10:04:00,Partenaire récruté,2026-04-07 17:33:00,Dstny UCaaS; Téléphonie IP; Mobile; Call2Teams,2026-04-15 10:04:00,Proxlan,419780262102
+493050762486,LAX MANAGEMENT,Stéphanie Martinage,2026-03-23 10:09:00,Partenaire récruté,2026-03-12 17:45:00,Mobile; Accès internet,2026-03-23 10:09:00,LAX MANAGEMENT,420784755955
+491764018407,STJ - Nouvel élément : Deal,Mathys Bechu,2026-03-12 09:24:00,Partenaire récruté,2026-03-10 09:48:00,Dstny UCaaS; Mobile,2026-03-12 09:24:00,STJ,7877356752
+488029966569,Open Lake Technology - programme opérateur,Jonathan Zbinden,2026-03-31 09:50:00,Partenaire récruté,2026-03-16 14:40:00,Dstny UCaaS; Téléphonie IP; Mobile,2026-03-31 09:50:00,OPEN LAKE,12453077994
+472987438281,PAUWELS LIMITED - Nouvel élément : Deal,Vincent Del Campo,2026-06-30 09:21:00,Partenaire récruté,2026-03-02 15:55:00,Mobile; Call2Teams; Dstny UCaaS,2026-03-02 15:57:00,PAUWELS LIMITED,361279150284
+472136731860,Expermap,Jennifer Pereira,2026-06-03 10:40:00,Partenaire récruté,2026-03-17 09:58:00,Téléphonie IP; Accès internet,2026-06-03 10:40:00,EXPERMAP,7877357282
+468792307932,ESPACE PLUS INFORMATIQUE : PROJET PARTENARIAT,Christophe Dorey,2026-05-15 15:34:00,Partenaire récruté,2026-03-04 10:27:00,Accès internet; Dstny UCaaS; Téléphonie IP; Mobile,2026-05-15 15:34:00,ESPACE PLUS INFORMATIQUE,217689229553
+467109966013,NUMELIUM,Jennifer Pereira,2026-02-18 15:02:00,Partenaire récruté,2026-02-12 11:17:00,Téléphonie IP; Accès internet,2026-02-18 15:02:00,NUMELIUM,395461527742
+467101384920,TACTIL-CONSEIL - PROJET PARTENARIAT,Christophe Dorey,2026-06-18 09:06:00,Partenaire récruté,2026-06-01 14:50:00,Accès internet; Dstny UCaaS; Mobile,2026-06-18 09:06:00,TACTIL-CONSEILS,214706745544
+466920030454,NUMERIS TELECOM - PROJET PARTENARIAT,Christophe Dorey,2026-05-15 15:34:00,Partenaire récruté,2026-04-07 17:33:00,Accès internet; Mobile,2026-05-15 15:34:00,NUMERIS TELECOM,393094426821
+466802603226,INFORMATIQUE SERVICES - PROJET PARTENARIAT,Christophe Dorey,2026-05-15 15:39:00,Partenaire récruté,2026-04-02 12:18:00,Dstny UCaaS; Mobile; Accès internet,2026-05-15 15:39:00,INFORMATIQUE SERVICES,380378183874
+466795858139,UNFINITI-DB INFORMATIQUE - PROJET PARTENARIAT,Christophe Dorey,2026-03-12 09:25:00,Partenaire récruté,2026-03-05 12:08:00,Accès internet,2026-03-12 09:25:00,UNFINITI-DB INFORMATIQUE,301741691074
+467106985209,OPTIONS TELECOM - PROJET PARTENARIAT,Christophe Dorey,2026-03-24 15:09:00,Partenaire récruté,2026-03-10 09:47:00,Accès internet; Dstny UCaaS; Mobile,2026-03-24 15:09:00,OPTIONS TELECOM,231943294177
+464834362574,GENERAL TRANSMISSION,Jennifer Pereira,2026-09-25 14:37:00,Partenaire récruté,2026-08-03 14:51:00,Téléphonie IP; Mobile,2026-09-25 14:37:00,GT SOLUTION (GENERAL TRANSMISSIONS),229355852016
+462742923471,RADIOTEL / ALL IN FORMATIQUE,Jennifer Pereira,2026-04-13 11:11:00,Partenaire récruté,2026-04-07 17:33:00,Téléphonie IP; Mobile,2026-04-13 11:11:00,RADIOTEL ENTREPRISES ( All IN INFORMATIQUE),9186053608
+452302798040,MCEM RECATIVATION ,Corinne Baroukh,2026-06-30 14:28:00,Partenaire récruté,2026-02-02 10:11:00,Téléphonie IP; Accès internet,2026-02-18 15:02:00,MCEM INFORMATIQUE,7877344443
+452140553413,GUEEX IT REACTIVATION DU PARTENAIRE ,Corinne Baroukh,2026-06-30 14:28:00,Partenaire récruté,2026-01-28 16:08:00,Dstny UCaaS; Accès internet; Téléphonie IP,2026-02-18 15:10:00,GUEEX IT,312824189152
+451123666125,MIRIALINX-PROJET PARTENARIAT,Christophe Dorey,2026-03-12 09:25:00,Partenaire récruté,2026-03-04 10:27:00,Accès internet; Cloud; Dstny UCaaS; Mobile,2026-03-12 09:25:00,MIRIALINX,378507627732
+451027587289,3P BUREAUTIQUE  - NOUVEL OPERATEUR ,Corinne Baroukh,2026-06-30 14:28:00,Partenaire récruté,2026-01-27 09:48:00,Accès internet; Dstny UCaaS; Téléphonie IP; Mobile,2026-02-23 10:30:00,3P BUREAUTIQUE,400828852454
+450453897460,ADULIS,Sylvain Gotrand,2026-04-30 17:01:00,Partenaire récruté,2026-04-09 14:20:00,Accès internet; Téléphonie IP; Mobile; Call2Teams; Dstny UCaaS,2026-04-30 17:01:00,ADULIS,267407320253
+441957855445,ALINEO / VOICE ONE ,Corinne Baroukh,2026-06-30 14:28:00,Partenaire récruté,2026-01-20 16:39:00,Accès internet; Cloud; Dstny UCaaS; Téléphonie IP; Mobile,2026-01-29 10:27:00,ALINEO / MODAL VOICE,317178368186
+437768748235,Be 365,Corinne Baroukh,2026-06-30 14:28:00,Partenaire récruté,2026-01-28 16:08:00,Dstny UCaaS; Accès internet; Mobile,2026-02-23 10:32:00,BE365/ hdm-conseil,366053022956
+437768654063,YNEIA,Stéphanie Martinage,2026-09-14 15:30:00,Partenaire récruté,2026-03-11 11:34:00,Accès internet; Mobile,2026-09-14 15:30:00,Yneia,10172141024
+437768650941,Clippit - Nouvel élément : Deal,Stéphanie Martinage,2026-03-19 09:26:00,Partenaire récruté,2026-03-18 10:00:00,Accès internet; Cloud; Dstny UCaaS; Téléphonie IP; Mobile; Call2Teams,2026-03-19 09:26:00,Clippit,173118893283
+439221144781,JML TECHNOLOGY,Christophe Dorey,2026-01-29 10:27:00,Partenaire récruté,2026-01-19 15:14:00,Accès internet; Téléphonie IP; Mobile,2026-01-29 10:27:00,JML TECHNOLOGY,7877357297
+433389925604,GLOBAL TELECOM OPERATEUR,Christophe Dorey,2026-02-12 15:33:00,Partenaire récruté,2026-01-30 14:45:00,Accès internet; Téléphonie IP; Mobile,2026-02-12 15:33:00,GLOBAL TELECOM OPERATEUR,239292612815
+428386619622,BUROCLIC prospect ambassadeur,Jonathan Zbinden,2026-02-25 17:12:00,Partenaire récruté,2026-02-12 11:17:00,Dstny UCaaS; Cloud; Accès internet; Téléphonie IP; Mobile; Call2Teams,2026-02-25 17:12:00,BUROCLIC,330447609039
+421038066910,LINTEL GROUPE,Corinne Baroukh,2026-06-30 14:28:00,Partenaire récruté,2026-01-28 16:09:00,Dstny UCaaS,2026-03-02 15:57:00,LINTEL GROUPE ,370821484786
+425344893164,LBS PASSAGE OPERATEUR ,Corinne Baroukh,2026-06-30 14:28:00,Partenaire récruté,2026-02-23 10:31:00,Cloud; Dstny UCaaS; Téléphonie IP; Accès internet,2026-02-23 10:32:00,LBS,8368197845
+413524701391,E-VOIR  - ,Corinne Baroukh,2026-06-30 14:28:00,Partenaire récruté,2026-01-20 16:41:00,Accès internet,2026-01-29 10:27:00,E-VOIR ,306084115693
+412695681232,B2F ALSACE,Tristan Eckel,2026-10-01 11:15:00,Partenaire récruté,2026-02-16 16:21:00,Accès internet; Dstny UCaaS; Mobile; Call2Teams,2026-10-01 11:15:00,B2F ALSACE,11672656120
+412354019554,Axel IT Solutions - Nouvel élément : Deal passage operateur,Vincent Del Campo,2026-06-01 10:16:00,Partenaire récruté,2026-05-18 10:35:00,Dstny UCaaS; Téléphonie IP; Call2Teams,2026-06-01 10:16:00,Axel IT Solutions,7877369292
+404452487383,PC PRO TECH/EVO TELECOM,Sylvain Gotrand,2026-01-29 10:27:00,Partenaire récruté,2026-01-23 13:59:00,Accès internet; Téléphonie IP; Mobile; Call2Teams; Dstny UCaaS,2026-01-29 10:27:00,PC PRO TECH,329412735162
+241517619419,DIPLOMATIC OPERATEUR (Indigo) - Reveil Opérateur,Alain Babaci,2026-05-15 10:34:00,Partenaire récruté,2026-02-13 11:25:00,Téléphonie IP; Mobile; Call2Teams,2026-02-25 14:07:00,Diplomatic Opérateur (Indigo Operateur),381968384223
+134442077371,KOMPA,Christophe Dorey,2026-09-02 14:07:00,Partenaire récruté,2026-08-31 10:43:00,Accès internet; Dstny UCaaS; Mobile,2026-09-02 14:07:00,KOMPA,98833205486
+525374938298,Calymera SAS,Jennifer Pereira,2026-10-31 09:47:00,Prêt pour formation,2026-10-13 17:26:00,Téléphonie IP,,CALYMERA SAS (DeepIT),304810932412
+523942564034,MYDEN GROUP,Jonathan Zbinden,2026-10-09 10:37:00,Prêt pour formation,2026-10-02 11:05:00,Accès internet; Dstny UCaaS; Dstny Digital Assistant; Mobile; Téléphonie IP,,MYDEN GROUP,450001209549
+524171683029,TH DEVELOPPEMENT  Réactivation ,Corinne Baroukh,2026-10-31 18:04:00,Prêt pour formation,2026-10-02 11:04:00,Accès internet; Mobile; Téléphonie IP,,T.H Service et Developpement,7877357251
+521166292200,AISNE SECURITE NOUVEL AMBASSADEUR ,Corinne Baroukh,2026-12-13 16:23:00,Prêt pour formation,2026-09-18 11:11:00,Accès internet; Mobile; Dstny Digital Assistant; Téléphonie IP,,Aisne Sécurité,445763718385
+521452404943,LE BUREAU DES TELECOMS SUD OUEST (nouvelle entité),Alain Babaci,2026-12-13 15:13:00,Prêt pour formation,2026-09-18 11:14:00,Téléphonie IP; Accès internet,,LE BUREAU DES TELECOMS SUD OUEST,447907753193
+520863034567,IT-BLOCK,Corinne Baroukh,2026-12-10 09:19:00,Prêt pour formation,2026-09-11 10:25:00,Accès internet; Dstny UCaaS; Mobile; Dstny Digital Assistant; Téléphonie IP,,IT-Block,441045299419
+513634795752,YEZH!,Mathys Bechu,2026-11-24 12:06:00,Prêt pour formation,2026-09-15 16:44:00,Dstny Digital Assistant; Dstny UCaaS; Couverture GSM; Mobile; VoIPcube; Call2Teams; Accès internet,,YEZH!,423549125861
+513627559140,TechTelecom ,Stéphanie Martinage,2026-10-27 10:11:00,Prêt pour formation,2026-09-10 17:19:00,Accès internet; Dstny UCaaS,,TECHTELECOM,448291754208
+505241661664,AVEO SOLUTIONS - Nouvel élément : Deal,Vincent Del Campo,2026-09-02 15:52:00,Prêt pour formation,2026-06-08 09:22:00,Accès internet; Cloud; Dstny UCaaS; Téléphonie IP; Mobile; Call2Teams,,AVEO SOLUTIONS,158537259241
+504644596972,utello.io  - New Partner,Jonathan Zbinden,2026-06-30 17:37:00,Prêt pour formation,2026-06-01 15:00:00,Accès internet; Cloud; Dstny UCaaS; Téléphonie IP; Dstny Digital Assistant; VoIPcube,,utello.io ,431574672608
+504550341823,DIAVICOM - pasqage operateur,Vincent Del Campo,2026-09-30 15:49:00,Prêt pour formation,2026-05-29 10:15:00,Accès internet; Cloud; Dstny UCaaS; Téléphonie IP; Mobile; Call2Teams; VoIPcube,,DIAVICOM,7538205680
+494470702328,Caux Télécom,Mathys Bechu,2026-06-17 09:43:00,Prêt pour formation,2026-06-01 15:06:00,Accès internet; Dstny UCaaS; Mobile; Téléphonie IP; Call2Teams,,Caux Télécom,405857617136
+491387755760,INOIA - Nouvel élément : Deal,Vincent Del Campo,2026-09-30 15:50:00,Prêt pour formation,2026-03-10 09:48:00,Call2Teams; Mobile,,INOIA,158513380585
+467642247407,OCEANET - PROJET PARTENARIAT,Christophe Dorey,2026-10-31 07:46:00,Prêt pour formation,2026-04-21 10:28:00,Accès internet; Dstny UCaaS; Mobile,,OCEANET,121979525325
+454387855596,Alesta Computer,Stéphanie Martinage,2026-10-30 15:44:00,Prêt pour formation,2026-10-19 16:48:00,Call2Teams; Dstny UCaaS; Mobile,,Alesta Computer,339443403996
+413219011788,ipvcom-informatique,Stéphanie Martinage,2026-10-30 15:28:00,Prêt pour formation,2026-01-30 15:11:00,Accès internet; Cloud; Dstny UCaaS; Téléphonie IP; Mobile; Call2Teams,,ipvcom-informatique,339442686152
+410335205592,GPCONSULT- ALTER ILLICO,Eric Maury,2026-06-30 17:39:00,Prêt pour formation,2026-02-12 11:17:00,Dstny UCaaS; Mobile; Call2Teams; Accès internet,,GPCONSULT - ALTER ILLICO,323614269651
+405654848702,ACESI GROUP,Tristan Eckel,2026-06-30 17:39:00,Prêt pour formation,2026-02-16 16:23:00,Accès internet; Dstny UCaaS; Mobile; Call2Teams,,ACESI GROUP,257888761050
