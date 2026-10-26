@@ -31,5 +31,7 @@ Inchangés (pas de mise à jour reçue) : boîte à idées des commerciaux, clea
 - **Sans mouvement > 30 jours** (entrée dans la phase actuelle avant le 26/09) : **120**.
 - **Sans contact > 30 jours** (dernier contact avant le 26/09 ou jamais) : **98**, dont 22 jamais contactés.
 - **Les deux** : **93**.
+- **Sans mouvement > 90 jours** (entrée dans la phase actuelle avant le 28/07) : **108** (Rendez-vous planifié 39, Pitch réalisé 29, Intérêt confirmé 20, Prêt pour formation 9, Formulaire renseigné 7, Approbation 4). Par commercial : Vincent Del Campo 22, Mathys Bechu 14, Stéphanie Martinage 14, Christophe Dorey 12, Alain Babaci 12, Sylvain Gotrand 11, Tristan Eckel 6, Corinne Baroukh 5, Jonathan Zbinden 4, Jennifer Pereira 3, Eric Maury 2, Matthis Le Castrec 2, Cyrille Brouiller 1.
+- Slide 7 du deck : présente uniquement l'immobilité > 30 j et > 90 j (sans contact et intersection retirés à la demande).
 - Par commercial (les deux / ouverts) : Vincent Del Campo 20/22, Stéphanie Martinage 13/18, Sylvain Gotrand 12/13, Mathys Bechu 11/17, Christophe Dorey 10/13, Alain Babaci 8/15, Tristan Eckel (désactivé) 6/6, Corinne Baroukh 4/9, Jonathan Zbinden 3/6, Matthis Le Castrec 2/3, Eric Maury (désactivé) 2/2, Cyrille Brouiller 1/1, Jennifer Pereira 1/10.
 - Médianes : 216 jours dans la phase actuelle, 144 jours depuis le dernier contact. 81 deals dans leur phase depuis plus de 6 mois.
